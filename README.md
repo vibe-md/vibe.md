@@ -400,27 +400,27 @@ The essentials:
 
 ## Contributing
 
-New skills, improvements, and fixes are all welcome. Here is the full path from idea to merged skill:
+New skills, new packages, improvements, and fixes are all welcome. Skills belong to **packages**: a package is a topic such as `gitly` or `security`, and it is a directory under `skills/` that holds related skills. Here is the full path from idea to published skill:
 
 1. **Fork** [vibe-md/vibe.md](https://github.com/vibe-md/vibe.md) on GitHub.
 2. **Clone** your fork: `git clone https://github.com/<your-username>/vibe.md.git`
-3. **Create a branch:** `git checkout -b add-my-skill`
-4. **Create a skill directory:** `skills/my-skill/`
-5. **Add `SKILL.md`** with frontmatter and instructions.
-6. **Add optional resources** in `scripts/`, `references/`, or `assets/`.
-7. **Run validation:**
+3. **Create a branch:** `git checkout -b add-security-audit`
+4. **Add a skill to a package:** `skills/<package>/<package>-<skill>/SKILL.md`. For a new package, also add `skills/<package>/README.md` (see [CONTRIBUTING.md](CONTRIBUTING.md#creating-a-new-package)).
+5. **Add optional resources** in `scripts/`, `references/`, or `assets/`.
+6. **Run validation and the tests:**
 
    ```bash
    python3 -m pip install -r requirements-dev.txt
    python3 scripts/validate-skills.py
+   python3 -m unittest discover -s tests
    ```
 
-8. **Run the tests:** `python3 -m unittest discover -s tests`
-9. **Open a Pull Request** against `main` and fill in the checklist.
-10. **Review the CI results.** The checks run automatically; errors point to the exact file and line.
-11. **Address feedback** by pushing more commits to your branch.
+7. **Open a Pull Request** against `main` and fill in the checklist.
+8. **Automated checks** run on the Pull Request. Errors point to the exact file and line.
+9. **A maintainer reviews it.** Only maintainers can merge to `main`, and only after the checks pass and at least one review is approved. Address feedback by pushing more commits.
+10. **After the merge, publication is automatic:** the downloads and the package catalog are built and published as a release, and the website rebuilds from it. Your skill or package appears on [vibe-md.dev](https://www.vibe-md.dev) and in the installer without any further steps.
 
-Adding a skill only requires files inside `skills/<skill-name>/` or `skills/<group>/<skill-name>/`. You never need to touch the installer or CI. See [CONTRIBUTING.md](CONTRIBUTING.md) for the details.
+Adding a skill or a package only requires files inside `skills/`. You never need to touch the installer, the build script, CI, or the website. See [CONTRIBUTING.md](CONTRIBUTING.md) for the details and [docs/MAINTAINERS.md](docs/MAINTAINERS.md) for how maintainers review and publish.
 
 ## Skill quality standards
 
@@ -461,23 +461,37 @@ To report a vulnerability or an unsafe skill, use GitHub's private vulnerability
 
 ## Updating and removing skills
 
-There is no automatic update or uninstall command. Both are a single step.
+Every installation records which files it installed, with their checksums, in a
+small receipt beside your agent's skills directory (for example
+`.claude/.vibe-md/gitly.receipt`). Updates and removal use it to touch only files
+that still match what was installed, and never files you created or edited.
 
-**Update** a skill by pulling the latest collection and reinstalling with `--force`:
+**Update** by running the same install command again, with a newer collection:
 
 ```bash
 git -C ~/vibe.md pull
-bash ~/vibe.md/scripts/install.sh --skill <skill-name> --agent claude-code --force --dry-run   # preview
-bash ~/vibe.md/scripts/install.sh --skill <skill-name> --agent claude-code --force
+bash ~/vibe.md/scripts/install.sh --group gitly --agent claude-code --dry-run   # preview
+bash ~/vibe.md/scripts/install.sh --group gitly --agent claude-code
 ```
 
-If your installed copy is already identical, nothing changes. `--force` replaces the installed directory completely, so any local edits you made to it are lost. Copy them elsewhere first if you want to keep them.
+A skill you have not modified is updated in place. If you edited a skill, or a
+directory of the same name exists that vibe.md did not install, the installer stops
+and changes nothing. Pass `--force` only when you want to replace such a copy; that
+discards your edits, so copy them elsewhere first. If your installed copy is
+already identical, nothing changes. Installations from before receipts existed are
+adopted when you install again.
 
-**Remove** a skill by deleting its directory from your agent's skills folder:
+**Remove** a package or a single skill with `--uninstall`:
 
 ```bash
-rm -rf .claude/skills/<skill-name>
+bash ~/vibe.md/scripts/install.sh --uninstall --group gitly --agent claude-code --dry-run   # preview
+bash ~/vibe.md/scripts/install.sh --uninstall --group gitly --agent claude-code
+bash ~/vibe.md/scripts/install.sh --uninstall --skill gitly-status --agent claude-code
 ```
+
+Files you modified after installing are kept and listed. The shared `vibe` router is
+kept while another package still uses it. For an installation without a receipt, only
+copies that are still identical to the vibe.md source are removed.
 
 Then reload or restart your agent if it does not notice the change on its own.
 

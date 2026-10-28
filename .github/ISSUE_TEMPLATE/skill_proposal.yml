@@ -10,8 +10,16 @@ body:
     id: name
     attributes:
       label: Proposed skill name
-      description: Lowercase kebab-case, 64 characters at most.
-      placeholder: e.g. release-notes
+      description: Lowercase kebab-case, 64 characters at most, starting with the package name.
+      placeholder: e.g. security-audit
+    validations:
+      required: true
+  - type: input
+    id: package
+    attributes:
+      label: Package
+      description: The existing package this skill belongs to (for example gitly), or the name of a new package you propose (for example security).
+      placeholder: e.g. security
     validations:
       required: true
   - type: textarea

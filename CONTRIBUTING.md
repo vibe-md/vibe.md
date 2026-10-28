@@ -2,7 +2,14 @@
 
 Thank you for helping build vibe.md. This guide covers everything you need to add a new skill, improve an existing one, or work on the tooling around them.
 
-**The short version:** a new skill is one directory, `skills/<skill-name>/` or `skills/<group>/<skill-name>/`, containing a `SKILL.md` file. Add it, run the validator, and open a Pull Request. You never need to change the installer, the validator, or CI to add a skill.
+**The short version:** vibe.md is a collection of **packages**. A package is a topic (for example `gitly` or `security`) that groups related skills. A skill is one directory containing a `SKILL.md` file, inside its package: `skills/<package>/<package>-<skill>/SKILL.md`. Add a skill or a whole package, run the validator, and open a Pull Request from your fork. A maintainer reviews and merges it, and everything after the merge (packaging, the catalog, the website) happens automatically. You never need to change the installer, the validator, the build script, the website, or CI to add a skill or a package.
+
+| I want to... | Do this |
+| --- | --- |
+| Improve an existing skill | Edit its `SKILL.md` and open a Pull Request. |
+| Add a skill to an existing package | Add `skills/<package>/<package>-<skill>/SKILL.md`. See [Adding a skill](#adding-a-skill). |
+| Add a new package | Add `skills/<package>/README.md` and at least one skill. See [Creating a new package](#creating-a-new-package). |
+| Find out what happens after my PR | See [Review and publication](#review-and-publication). |
 
 ## Contents
 
@@ -16,6 +23,7 @@ Thank you for helping build vibe.md. This guide covers everything you need to ad
 - [A complete example](#a-complete-example)
 - [Validating and testing](#validating-and-testing)
 - [Pull Request workflow](#pull-request-workflow)
+- [Review and publication](#review-and-publication)
 - [Review criteria](#review-criteria)
 - [Security requirements](#security-requirements)
 - [Licensing and attribution](#licensing-and-attribution)
@@ -74,15 +82,15 @@ vibe.md/
 │   ├── _shared/vibe/SKILL.md   # Router included in every installation
 │   └── gitly/<skill>/SKILL.md  # Independently usable group members
 ├── scripts/
-│   ├── install.sh             # Universal installer (bash, no dependencies)
-│   └── validate-skills.py     # Validator used locally and in CI
-├── tests/
-│   ├── fixtures/valid/        # Sample skills that must pass validation
-│   ├── fixtures/invalid/      # One broken collection per failure case
-│   ├── test_validator.py
-│   └── test_installer.py
+│   ├── install.sh             # Installer: install, update, uninstall (bash, no dependencies)
+│   ├── validate-skills.py     # Validator used locally and in CI
+│   └── build-packages.py      # Builds ZIP downloads and catalog.json for every package
+├── evals/                     # Natural-language scenarios for checking skill selection
+├── tests/                     # Validator, installer, lifecycle, packaging, and catalog tests
 └── .github/
-    ├── workflows/validate-skills.yml
+    ├── workflows/validate-skills.yml   # Runs on every Pull Request
+    ├── workflows/publish.yml           # Runs only after a merge to main
+    ├── CODEOWNERS                      # Who must review which files
     ├── ISSUE_TEMPLATE/
     └── PULL_REQUEST_TEMPLATE.md
 ```
@@ -98,15 +106,45 @@ Key rules:
 ## Adding a skill
 
 1. **Check for overlap.** Search the [existing skills](skills/) and [open Pull Requests](https://github.com/vibe-md/vibe.md/pulls). Improving an existing skill is often better than adding a near-duplicate.
-2. **Pick a name.** Lowercase letters, digits, and single hyphens, up to 64 characters, for example `release-notes` or `pr-review`. Prefer clear, descriptive names over clever ones.
-3. **Create the directory** `skills/<skill-name>/` or `skills/<group>/<skill-name>/` and add `SKILL.md`. A group may also contain Markdown documentation and `LICENSE`.
+2. **Pick a name.** Lowercase letters, digits, and single hyphens, up to 64 characters, starting with the package name, for example `gitly-branches` or `security-audit`. Installation puts every package's skills into one agent directory, so the prefix keeps names unique (the validator warns when it is missing). Prefer clear, descriptive names over clever ones.
+3. **Create the directory** `skills/<package>/<package>-<skill>/` and add `SKILL.md`. Even a single skill belongs in a package: create one, as described below. (The installer still supports a standalone `skills/<skill-name>/` for local use, but standalone skills are not published on the website.)
 4. **Add optional resources** (`scripts/`, `references/`, `assets/`) only if the skill needs them.
 5. **Validate and test** as described below.
 6. **Open a Pull Request.**
 
 A skill contribution should stay inside its standalone skill or group directory. If you think the tooling needs to change to support your skill, open an issue first so we can keep the infrastructure generic.
 
-### Adding a group
+### Creating a new package
+
+A package is a directory under `skills/` that holds skills. Packages are discovered
+automatically, so a new package never needs a change to the installer, the build
+script, CI, or the website. Create:
+
+```text
+skills/security/
+├── README.md                  # optional frontmatter below, then the documentation
+├── LICENSE                    # optional, shared by the package
+└── security-audit/SKILL.md    # at least one skill
+```
+
+`README.md` may start with this frontmatter. Every field is optional, and anything
+omitted is derived (the title from the directory name, the summary from the first
+paragraph, the skills from the directory):
+
+```yaml
+---
+title: Security
+summary: One sentence that says what the package helps with.
+category: Security          # Version Control, Testing, Debugging, Deployment, Documentation, Security, or Productivity
+maintainers: [your-github-username]
+---
+```
+
+The website, the downloads, and the installer all read this information from the
+source, so there is nothing else to register. Add yourself under `maintainers` and
+to `.github/CODEOWNERS` if you want to review future changes to the package.
+
+### Adding a group (technical details)
 
 Create `skills/<group>/<skill-name>/SKILL.md` for each workflow. Each workflow
 may use resources inside its own directory, or top-level Markdown documents and
@@ -268,7 +306,9 @@ Run both commands from the repository root before you open a Pull Request:
 
 ```bash
 python3 scripts/validate-skills.py          # validates every skill in skills/
-python3 -m unittest discover -s tests        # runs the validator and installer tests
+python3 -m unittest discover -s tests        # runs the validator, installer, packaging, and catalog tests
+python3 scripts/build-packages.py --all --output-dir /tmp/vibe-md-build   # builds the downloads and catalog
+python3 scripts/build-packages.py --verify /tmp/vibe-md-build             # checks them against your source
 ```
 
 The validator checks that:
@@ -278,9 +318,14 @@ The validator checks that:
 - `name` and `description` are present and well-formed,
 - names are lowercase kebab-case, unique, and match their directory,
 - relative links resolve to local files or the permitted shared group documents,
-- the skill contains no symbolic links and has instructions after the frontmatter.
+- the skill contains no symbolic links and has instructions after the frontmatter,
+- no file is larger than 1 MiB, binary files appear only under `assets/`, and text is UTF-8,
+- no file contains an obvious secret (private keys and common token formats),
+- the package `README.md` frontmatter, if present, uses only the documented fields.
 
-Errors name the file and, where possible, the line, plus a hint on how to fix it.
+It also **warns** (without failing) about bundled `scripts/`, executable files, instructions that pipe a download into a shell, and skill names without the package prefix. Warnings tell the reviewer where to look closely.
+
+Errors name the file and, where possible, the line, plus a hint on how to fix it. These checks catch honest mistakes. They do not replace a maintainer reading what your skill tells an agent to do.
 
 ### Test the skill with an agent
 
@@ -300,11 +345,27 @@ Then open the agent in that project, check that the skill is discovered, and run
 2. Commit your changes with a clear message, for example `Add release-notes skill`.
 3. Push to your fork and open a Pull Request against `main`.
 4. Fill in the Pull Request template checklist.
-5. Wait for CI. The **Validate skills** workflow runs the validator and the full test suite on Linux and macOS. If it fails, open the failed job; validation errors are also shown inline on the changed files.
-6. Respond to review feedback by pushing more commits to the same branch.
-7. A maintainer merges the Pull Request once CI passes and the review is approved.
+5. Wait for CI. The **Validate skills** workflow runs the validator, builds every package and the catalog, and runs the full test suite on Linux and macOS. If it fails, open the failed job; validation errors are also shown inline on the changed files. The first time you contribute, a maintainer has to approve the workflow run before it starts.
+6. Respond to review feedback by pushing more commits to the same branch. New commits require a fresh approval.
+7. A maintainer merges the Pull Request once CI passes and the review is approved. **Contributors cannot merge their own Pull Requests.**
 
 Keep Pull Requests focused: one skill, or one improvement, per Pull Request.
+
+## Review and publication
+
+```text
+Fork / branch → Pull Request → automated checks → maintainer review
+   → maintainer merges → publish workflow → release → website rebuild → users can install
+```
+
+1. **Automated checks** (`validate-skills.yml`) run on your Pull Request with a read-only token and no secrets. They never publish anything.
+2. **Maintainer review.** At least one maintainer must approve, and the checks must pass. Changes to `scripts/`, `.github/`, and `tests/` always need a maintainer, because they decide what everyone else's contributions are allowed to do. Bundled scripts get an extra look.
+3. **Merge.** Only maintainers can merge to `main`.
+4. **Publication is automatic after the merge.** The `publish.yml` workflow re-runs the checks on the merged commit, builds the ZIP downloads and `catalog.json` for every package, and publishes them as a GitHub Release. Nothing is published if any step fails.
+5. **The website** reads that catalog when it builds. A deploy hook triggers a rebuild, so a new skill or package normally appears within a few minutes of the merge. Until then the website keeps showing the previous, consistent version.
+6. **Users** install with the commands shown on the package page. Their installation records what it installed, so updating and removing it later is safe.
+
+If something is slow or missing, see [docs/MAINTAINERS.md](docs/MAINTAINERS.md) for how maintainers check the publication status.
 
 ## Review criteria
 

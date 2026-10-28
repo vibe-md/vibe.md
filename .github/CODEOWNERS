@@ -1,0 +1,18 @@
+# Who must review which files.
+#
+# CODEOWNERS only takes effect when the main branch requires code-owner review.
+# That setting, and the list of people who may merge, are configured in GitHub:
+# see docs/MAINTAINERS.md.
+
+# Every change needs a maintainer.
+*                  @AdiBer1 @NirGeron98
+
+# What decides which contributions are allowed to pass, and what ships to users.
+/.github/          @AdiBer1 @NirGeron98
+/scripts/          @AdiBer1 @NirGeron98
+/tests/            @AdiBer1 @NirGeron98
+/skills/_shared/   @AdiBer1 @NirGeron98
+
+# Packages. Package maintainers may be listed here in addition to the project
+# maintainers, for example:  /skills/security/  @AdiBer1 @NirGeron98 @security-maintainer
+/skills/gitly/     @AdiBer1 @NirGeron98
