@@ -2,13 +2,14 @@
 
 Thank you for helping build vibe.md. This guide covers everything you need to add a new skill, improve an existing one, or work on the tooling around them.
 
-**The short version:** vibe.md is a collection of **packages**. A package is a topic (for example `gitly` or `security`) that groups related skills. A skill is one directory containing a `SKILL.md` file, inside its package: `skills/<package>/<package>-<skill>/SKILL.md`. Add a skill or a whole package, run the validator, and open a Pull Request from your fork. A maintainer reviews and merges it, and everything after the merge (packaging, the catalog, the website) happens automatically. You never need to change the installer, the validator, the build script, the website, or CI to add a skill or a package.
+**The short version:** vibe.md is a collection of **packages**. A package is a topic (for example `gitly` or `security`) that groups related skills. A skill is one directory containing a `SKILL.md` file, inside its package: `skills/<package>/<package>-<skill>/SKILL.md`. Add a skill or a whole package, run the validator, and open a Pull Request from your fork. A maintainer reviews and merges it, and after the merge an automated workflow packages it and the website picks it up (see [Review and publication](#review-and-publication) for what is verified today). You never need to change the installer, the validator, the build script, the website, or CI to add a skill or a package.
 
 | I want to... | Do this |
 | --- | --- |
 | Improve an existing skill | Edit its `SKILL.md` and open a Pull Request. |
 | Add a skill to an existing package | Add `skills/<package>/<package>-<skill>/SKILL.md`. See [Adding a skill](#adding-a-skill). |
 | Add a new package | Add `skills/<package>/README.md` and at least one skill. See [Creating a new package](#creating-a-new-package). |
+| Add a single skill on its own | Add `skills/<skill-name>/SKILL.md`. It is published as a package of one skill. |
 | Find out what happens after my PR | See [Review and publication](#review-and-publication). |
 
 ## Contents
@@ -107,7 +108,7 @@ Key rules:
 
 1. **Check for overlap.** Search the [existing skills](skills/) and [open Pull Requests](https://github.com/vibe-md/vibe.md/pulls). Improving an existing skill is often better than adding a near-duplicate.
 2. **Pick a name.** Lowercase letters, digits, and single hyphens, up to 64 characters, starting with the package name, for example `gitly-branches` or `security-audit`. Installation puts every package's skills into one agent directory, so the prefix keeps names unique (the validator warns when it is missing). Prefer clear, descriptive names over clever ones.
-3. **Create the directory** `skills/<package>/<package>-<skill>/` and add `SKILL.md`. Even a single skill belongs in a package: create one, as described below. (The installer still supports a standalone `skills/<skill-name>/` for local use, but standalone skills are not published on the website.)
+3. **Create the directory** `skills/<package>/<package>-<skill>/` and add `SKILL.md`. A skill with no siblings may also live on its own as `skills/<skill-name>/SKILL.md`; it is published as a package of one skill, and its name needs no prefix.
 4. **Add optional resources** (`scripts/`, `references/`, `assets/`) only if the skill needs them.
 5. **Validate and test** as described below.
 6. **Open a Pull Request.**
@@ -361,8 +362,10 @@ Fork / branch → Pull Request → automated checks → maintainer review
 1. **Automated checks** (`validate-skills.yml`) run on your Pull Request with a read-only token and no secrets. They never publish anything.
 2. **Maintainer review.** At least one maintainer must approve, and the checks must pass. Changes to `scripts/`, `.github/`, and `tests/` always need a maintainer, because they decide what everyone else's contributions are allowed to do. Bundled scripts get an extra look.
 3. **Merge.** Only maintainers can merge to `main`.
-4. **Publication is automatic after the merge.** The `publish.yml` workflow re-runs the checks on the merged commit, builds the ZIP downloads and `catalog.json` for every package, and publishes them as a GitHub Release. Nothing is published if any step fails.
-5. **The website** reads that catalog when it builds. A deploy hook triggers a rebuild, so a new skill or package normally appears within a few minutes of the merge. Until then the website keeps showing the previous, consistent version.
+4. **Publication follows a merge, and only a merge.** The `publish.yml` workflow re-runs the checks on the merged commit, builds the ZIP downloads and `catalog.json` for every package, and publishes them as a GitHub Release. Nothing is published if any step fails, and nothing is published for a Pull Request.
+5. **The website** reads that catalog when it builds, and rebuilds when maintainers have configured the optional deploy hook. Until a rebuild, the website keeps showing the previous, consistent version.
+
+> **Current status:** the publication workflow is implemented and tested locally, but it has not yet run on GitHub, so a maintainer will tell you when your merged contribution is live. See [docs/MAINTAINERS.md](docs/MAINTAINERS.md) for what is still being set up.
 6. **Users** install with the commands shown on the package page. Their installation records what it installed, so updating and removing it later is safe.
 
 If something is slow or missing, see [docs/MAINTAINERS.md](docs/MAINTAINERS.md) for how maintainers check the publication status.

@@ -418,9 +418,9 @@ New skills, new packages, improvements, and fixes are all welcome. Skills belong
 7. **Open a Pull Request** against `main` and fill in the checklist.
 8. **Automated checks** run on the Pull Request. Errors point to the exact file and line.
 9. **A maintainer reviews it.** Only maintainers can merge to `main`, and only after the checks pass and at least one review is approved. Address feedback by pushing more commits.
-10. **After the merge, publication is automatic:** the downloads and the package catalog are built and published as a release, and the website rebuilds from it. Your skill or package appears on [vibe-md.dev](https://www.vibe-md.dev) and in the installer without any further steps.
+10. **After the merge, an automated workflow publishes it:** the downloads and the package catalog are built and published as a release, and the website builds from it. Nothing is published before a maintainer merges. The workflow is implemented but has not yet run on GitHub, so a maintainer will confirm when your skill is live.
 
-Adding a skill or a package only requires files inside `skills/`. You never need to touch the installer, the build script, CI, or the website. See [CONTRIBUTING.md](CONTRIBUTING.md) for the details and [docs/MAINTAINERS.md](docs/MAINTAINERS.md) for how maintainers review and publish.
+Adding a skill or a package only requires files inside `skills/`. A skill can also live on its own as `skills/<skill-name>/SKILL.md`; it is published as a package of one skill. You never need to touch the installer, the build script, CI, or the website. See [CONTRIBUTING.md](CONTRIBUTING.md) for the details and [docs/MAINTAINERS.md](docs/MAINTAINERS.md) for how maintainers review and publish.
 
 ## Skill quality standards
 
@@ -479,7 +479,9 @@ directory of the same name exists that vibe.md did not install, the installer st
 and changes nothing. Pass `--force` only when you want to replace such a copy; that
 discards your edits, so copy them elsewhere first. If your installed copy is
 already identical, nothing changes. Installations from before receipts existed are
-adopted when you install again.
+adopted when you install again. If the new version changed any installed file, that first update stops
+and asks for `--force` once, because there is no record of whether you edited those files; copy any
+edits you want to keep first. Updates after that need no `--force`.
 
 **Remove** a package or a single skill with `--uninstall`:
 

@@ -7,6 +7,11 @@ in this repository**, so a maintainer with admin access has to apply them.
 
 ## How publication works
 
+> **Status:** the publication workflow is implemented but has not run on GitHub yet. No release
+> exists, and the website deploy hook is not configured. Treat publication as unverified until
+> a maintainer has completed the checklist at the end of this page and one real merge has
+> produced a release.
+
 ```text
 merge to main ─► publish.yml ─► GitHub Release "catalog-<sha>" ─► deploy hook ─► website rebuild
                   validate, test,   catalog.json + one ZIP per       (optional)    reads the latest
@@ -32,35 +37,48 @@ gh release edit catalog-<12-character-sha> --latest
 
 ## Required GitHub settings
 
-Checked read-only on 2026-10-28. The first column is what is configured now.
+Read from GitHub on 2026-10-28 (read-only), so this table is a snapshot: check the
+settings pages before relying on it.
+
+An active repository ruleset named **`block`** applies to the default branch, with **no
+bypass actors** (administrators are bound by it). It requires a Pull Request with one
+approval and blocks deletion and force pushes. The older branch protection rule also
+requires the `CI passed` check and resolved conversations. When both apply, the stricter
+rule wins.
 
 | Setting | Now | Required |
 | --- | --- | --- |
-| Pull request required before merging | yes | yes |
-| Required approving reviews | **0** | **1** |
-| Dismiss stale approvals when new commits are pushed | no | **yes** |
-| Require review from Code Owners | no | **yes** (see `.github/CODEOWNERS`) |
-| Require approval of the most recent reviewable push | no | **yes** |
-| Required status check | `CI passed` | `CI passed` |
-| Resolve conversations before merging | yes | yes |
-| Apply the rules to administrators | **no** | **yes** |
-| Allow force pushes and deletions | no | no |
-| Rulesets | none | optional alternative to the branch rule |
+| Pull request required before merging | yes (ruleset and branch protection) | yes |
+| Required approving reviews | **1** (ruleset). The branch rule says 0 | 1 |
+| Block force pushes and deletions | yes | yes |
+| Rules apply to administrators | yes (the ruleset has no bypass actors) | yes |
+| Required status check `CI passed` | branch protection only | also add it to the ruleset, or keep the branch rule |
+| Resolve conversations before merging | branch protection only | yes |
+| Dismiss stale approvals when new commits are pushed | **no** | **yes** |
+| Require review from Code Owners | **no** | **yes** (see `.github/CODEOWNERS`) |
+| Require approval of the most recent reviewable push | **no** | **yes** |
+| Restrict who may merge | **no** (the organization has no teams) | **yes**, to a `maintainers` team |
+| Fork pull request workflows need approval | first-time contributors only | all outside collaborators |
+| Require actions to be pinned to a full commit SHA | **no** | yes (the workflows already pin every action) |
 
-Set them in **Settings → Branches → Branch protection rules → `main`**, or in
-**Settings → Rules → Rulesets** (a ruleset can also name bypass actors explicitly,
-which is clearer than administrators silently bypassing a branch rule).
+Still incomplete: every **bold** row above, and the website hook below. Until they are
+applied, a pushed approval can go stale without being dismissed, and no setting ties
+approval to the people listed in CODEOWNERS.
+
+Set them in **Settings → Rules → Rulesets** (edit `block`) or **Settings → Branches**.
+A ruleset can also name bypass actors explicitly, which is clearer than administrators
+bypassing a rule. With no bypass actors, even an emergency fix needs a second
+maintainer's approval; add a bypass actor if you want an emergency path, and say so in the PR.
 
 Because GitHub never counts an author's own approval, a maintainer's Pull Request
-needs a second maintainer. With two maintainers that is the intended behavior. If an
-emergency fix needs to skip review, use a ruleset bypass actor and say so in the PR.
+needs a second maintainer. With two maintainers that is the intended behavior.
 
-**Who may merge.** On an organization repository, enable **Restrict who can push to
-matching branches** (or the ruleset equivalent) and allow only a `maintainers` team.
-Contributors from forks cannot merge in any case, because they have no write access.
-Collaborators with Write access can merge an approved Pull Request unless this
-restriction is set, so grant Write access only to maintainers. Today the
-organization has no teams; create one in **Organization → Teams**.
+**Approval is not permission to merge.** Contributors from forks cannot merge in any
+case, because they have no write access. Collaborators with Write access can merge an
+approved Pull Request unless merging is restricted, so grant Write access only to
+maintainers. Today the only collaborators are the two administrators. To make this
+explicit and durable, create a `maintainers` team (**Organization → Teams**) and restrict
+who may merge to it.
 
 **CODEOWNERS** does nothing by itself. It is only enforced when "Require review from
 Code Owners" is on. To add a package maintainer, add their username to the package
@@ -100,3 +118,11 @@ contribution read the `description` (will an agent pick it at the right time?),
 every instruction that changes files or runs commands, and every `scripts/` file.
 The validator marks the places that need attention as warnings. Merge only when
 you would be comfortable with every user running the skill.
+
+## Before relying on automatic publication
+
+1. Apply the settings marked **bold** above.
+2. Create the Vercel deploy hook and the `VERCEL_DEPLOY_HOOK_URL` secret (optional but recommended).
+3. Merge a small change to `main` and confirm in **Actions → Publish catalog** that a `catalog-<sha>` release appears with `catalog.json` and the ZIPs.
+4. Check that the website rebuilt and shows the same source revision as `catalog.json`.
+5. Only then tell contributors that merged contributions are published automatically.

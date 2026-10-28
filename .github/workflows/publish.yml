@@ -29,8 +29,6 @@ jobs:
     timeout-minutes: 15
     permissions:
       contents: write # create the release; granted to this job only
-    env:
-      GH_TOKEN: ${{ github.token }}
     steps:
       - name: Check out the merged commit
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -58,8 +56,12 @@ jobs:
       - name: Verify the catalog against the source
         run: python scripts/build-packages.py --verify dist/downloads
 
+      # The token is passed only to the two steps below that call the GitHub API. The steps
+      # that run repository code (validation, tests, build) never see it.
       - name: Skip if a newer commit has already been merged
         id: current
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           # A slower, older run must not replace what a newer run published.
           head="$(gh api "repos/$GITHUB_REPOSITORY/commits/main" --jq .sha)"
@@ -73,6 +75,8 @@ jobs:
       - name: Publish the release
         id: release
         if: steps.current.outputs.publish == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           tag="catalog-${GITHUB_SHA:0:12}"
           if is_draft="$(gh release view "$tag" --json isDraft --jq .isDraft 2>/dev/null)"; then
