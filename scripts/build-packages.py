@@ -66,7 +66,11 @@ def build_packages(skills_dir, group, output_dir, ref):
                 name = "skills/" + skill.name + "/" + path.relative_to(skill).as_posix()
                 data = path.read_bytes()
                 if path == entry and skill.parent == group_dir:
-                    data = re.sub(rb"(\]\([ \t]*<?)\.\./", lambda match: match[1] + ("../" + group + "/").encode(), data)
+                    data = subprocess.run(
+                        ["bash", "-c", 'source "$1"; rewrite_group_links "$2" "$3"',
+                         "vibe-md-rewrite", str(ROOT / "scripts/install.sh"), str(path), group],
+                        check=True, stdout=subprocess.PIPE,
+                    ).stdout
                 payload[name] = data
                 modes[name] = 0o755 if path.stat().st_mode & 0o111 else 0o644
 

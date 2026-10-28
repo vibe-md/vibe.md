@@ -325,6 +325,66 @@ select_skills() {
 
 # Keep skills directly discoverable while installing group documents only once.
 # Source links ../FILE become ../<group>/FILE in the flat installed layout.
+# Keep this transformation shared with the ZIP builder, including when this
+# installer is downloaded as a single file.
+rewrite_group_links() {
+  local original="$1" group="$2" last
+  awk -v group="$group" '
+    function rewrite(text, prefix, result) {
+      result = ""
+      while (match(text, /]\([ \t]*<?\.\.\//)) {
+        prefix = substr(text, 1, RSTART + RLENGTH - 1)
+        sub(/\.\.\/$/, "../" group "/", prefix)
+        result = result prefix
+        text = substr(text, RSTART + RLENGTH)
+      }
+      text = result text
+      if (text ~ /^[ \t]*\[[^]]+\]:[ \t]*<?\.\.\//) {
+        match(text, /^[ \t]*\[[^]]+\]:[ \t]*<?\.\.\//)
+        prefix = substr(text, 1, RLENGTH)
+        sub(/\.\.\/$/, "../" group "/", prefix)
+        text = prefix substr(text, RLENGTH + 1)
+      }
+      return text
+    }
+    {
+      line = $0
+      if (NR > 1) printf "\n"
+      if (match(line, /^[ \t]*(```+|~~~+)/)) {
+        marker = substr(line, RSTART, RLENGTH)
+        sub(/^[ \t]*/, "", marker)
+        if (!fenced) { fenced = substr(marker, 1, 1); fence_len = length(marker) }
+        else if (substr(marker, 1, 1) == fenced && length(marker) >= fence_len && substr(line, RLENGTH + 1) ~ /^[ \t\r]*$/) fenced = ""
+        printf "%s", line
+        next
+      }
+      if (fenced) { printf "%s", line; next }
+      rest = line
+      while (match(rest, /`+/)) {
+        before = substr(rest, 1, RSTART - 1)
+        ticks = substr(rest, RSTART, RLENGTH)
+        after = substr(rest, RSTART + RLENGTH)
+        search = after
+        pos = 0
+        offset = 0
+        while (match(search, /`+/)) {
+          if (RLENGTH == length(ticks)) { pos = offset + RSTART; break }
+          offset += RSTART + RLENGTH - 1
+          search = substr(search, RSTART + RLENGTH)
+        }
+        if (!pos) break
+        printf "%s%s%s%s", rewrite(before), ticks, substr(after, 1, pos - 1), ticks
+        rest = substr(after, pos + length(ticks))
+      }
+      printf "%s", rewrite(rest)
+    }
+  ' "$original" || return 1
+  if [ -s "$original" ]; then
+    last="$(tail -c 1 "$original"; printf x)"
+    [ "$last" != "$(printf '\nx')" ] || printf '\n'
+  fi
+}
+
 prepare_selection() {
   local source name group_dir group file candidate original
   local prepared=()
@@ -362,7 +422,7 @@ prepare_selection() {
         done
       fi
       original="$PREPARE_DIR/$name/SKILL.md"
-      sed -E "s|(\]\([[:blank:]]*<?)\.\./|\1../$group/|g" "$original" > "$PREPARE_DIR/skill.tmp" ||
+      rewrite_group_links "$original" "$group" > "$PREPARE_DIR/skill.tmp" ||
         die "could not resolve resource links for '$name'."
       cp "$PREPARE_DIR/skill.tmp" "$original"
     fi
@@ -920,4 +980,6 @@ main() {
   install_skills
 }
 
-main "$@"
+if [[ -z "${BASH_SOURCE[0]:-}" || "${BASH_SOURCE[0]}" == "$0" ]]; then
+  main "$@"
+fi

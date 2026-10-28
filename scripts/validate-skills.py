@@ -42,8 +42,8 @@ COLLECTION_FILES = {"README.md"}
 
 # Markdown links and images: [text](target) or ![alt](target "title")
 LINK_PATTERN = re.compile(r"!?\[[^\]]*\]\(\s*<?([^)\s>]+)>?(?:\s+\"[^\"]*\")?\s*\)")
-FENCE_PATTERN = re.compile(r"^\s*(```|~~~)")
-INLINE_CODE_PATTERN = re.compile(r"`[^`]*`")
+REFERENCE_PATTERN = re.compile(r"^[ \t]*\[[^\]]+\]:[ \t]*<?([^\s>]+)>?")
+FENCE_PATTERN = re.compile(r"^[ \t]*(`{3,}|~{3,})(.*)$")
 URL_SCHEME_PATTERN = re.compile(r"^[a-zA-Z][a-zA-Z0-9+.-]*:")
 
 
@@ -87,14 +87,26 @@ def split_frontmatter(text):
 
 def iter_markdown_links(body):
     """Yield (line_number, target) for links outside code blocks and inline code."""
-    in_fence = False
+    fence = None
     for number, line in enumerate(body.splitlines(), start=1):
-        if FENCE_PATTERN.match(line):
-            in_fence = not in_fence
+        marker = FENCE_PATTERN.match(line)
+        if marker:
+            token, suffix = marker.groups()
+            if fence is None:
+                fence = token
+            elif token[0] == fence[0] and len(token) >= len(fence) and not suffix.strip():
+                fence = None
             continue
-        if in_fence:
+        if fence is not None:
             continue
-        for match in LINK_PATTERN.finditer(INLINE_CODE_PATTERN.sub("", line)):
+        # Replace code spans with spaces so removal cannot join unrelated text.
+        def hide_code(match):
+            return " " * len(match.group(0))
+        line = re.sub(r"(`+)(?!`)(.*?)(?<!`)\1(?!`)", hide_code, line)
+        reference = REFERENCE_PATTERN.match(line)
+        if reference:
+            yield number, reference.group(1)
+        for match in LINK_PATTERN.finditer(line):
             yield number, match.group(1)
 
 
