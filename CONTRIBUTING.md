@@ -168,6 +168,8 @@ Your existing `metadata` entries, such as `author` or `collection`, are unaffect
 Create `skills/<group>/<skill-name>/SKILL.md` for each workflow. Each workflow
 may use resources inside its own directory, or top-level Markdown documents and
 `LICENSE` shared by its group. Link shared files as `../CONTRACT.md` or `../LICENSE`.
+Inline links and reference definitions are supported; links in fenced and inline
+code are left unchanged.
 The installer and ZIP builder include them once in `<agent-skills>/<group>/` and
 resolve those links in installed skills. Individual installation also includes
 these group resources. Keep skill names globally unique and distinct from group
