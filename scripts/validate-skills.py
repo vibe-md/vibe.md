@@ -261,7 +261,39 @@ SUSPICIOUS_PATTERNS = [
     (re.compile(r"\brm\s+-[a-zA-Z]*r[a-zA-Z]*f[a-zA-Z]*\s+(?:/|~|\$HOME)(?:\s|$)"), "recursively removes a system or home directory"),
 ]
 PACKAGE_METADATA_KEYS = {"title", "summary", "category", "maintainers"}
+# Keep package text short enough to fit a catalog card; the website enforces looser limits as a backstop.
+PACKAGE_TEXT_LIMITS = {"title": 80, "summary": 400, "category": 40}
+MAX_MAINTAINERS = 10
+CONTROL_CHARACTERS = re.compile(r"[\x00-\x08\x0b-\x1f\x7f]")
 MAINTAINER_PATTERN = re.compile(r"^[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})$")
+
+
+def check_secrets(content, where, report):
+    for pattern, label in SECRET_PATTERNS:
+        if pattern.search(content):
+            report.error(where, "looks like it contains {}. Remove it and rotate the credential.".format(label))
+            return
+
+
+def check_document(path, report):
+    """Size, encoding, and secret checks for a distributed document outside any skill
+    (a package README, LICENSE, or other Markdown). These files are packaged into every download."""
+    if path.is_symlink() or not path.is_file():
+        return
+    where = display_path(path)
+    size = path.stat().st_size
+    if size > FILE_SIZE_MAX:
+        report.error(where, "file is {} KiB; the limit is {} KiB. Link to large files instead.".format(
+            size // 1024, FILE_SIZE_MAX // 1024))
+        return
+    if size > FILE_SIZE_WARN:
+        report.warning(where, "file is {} KiB. Consider splitting or linking to it.".format(size // 1024))
+    try:
+        content = path.read_text(encoding="utf-8")
+    except UnicodeDecodeError:
+        report.error(where, "documents must be UTF-8 encoded text.")
+        return
+    check_secrets(content, where, report)
 
 
 def check_content_safety(skill_dir, report):
@@ -296,10 +328,7 @@ def check_content_safety(skill_dir, report):
         except UnicodeDecodeError:
             report.error(where, "text files must be UTF-8 encoded.")
             continue
-        for pattern, label in SECRET_PATTERNS:
-            if pattern.search(content):
-                report.error(where, "looks like it contains {}. Remove it and rotate the credential.".format(label))
-                break
+        check_secrets(content, where, report)
         for pattern, label in SUSPICIOUS_PATTERNS:
             if pattern.search(content):
                 report.warning(where, "{}. Maintainers must confirm this is intended and documented.".format(label))
@@ -329,14 +358,23 @@ def check_package_metadata(group_dir, report):
         return
     for key in sorted(set(data) - PACKAGE_METADATA_KEYS):
         report.error(where, "unknown package field '{}'. Allowed: {}.".format(key, ", ".join(sorted(PACKAGE_METADATA_KEYS))))
-    for key in ("title", "summary", "category"):
-        if key in data and (not isinstance(data[key], str) or not data[key].strip()):
+    for key, limit in PACKAGE_TEXT_LIMITS.items():
+        if key not in data:
+            continue
+        value = data[key]
+        if not isinstance(value, str) or not value.strip():
             report.error(where, "'{}' must be a non-empty string.".format(key))
+        elif len(value) > limit:
+            report.error(where, "'{}' is {} characters; the maximum is {}.".format(key, len(value), limit))
+        elif CONTROL_CHARACTERS.search(value) or "\n" in value:
+            report.error(where, "'{}' must be a single line of plain text.".format(key))
     maintainers = data.get("maintainers", [])
     if not isinstance(maintainers, list) or not all(
         isinstance(item, str) and MAINTAINER_PATTERN.fullmatch(item) for item in maintainers
     ):
         report.error(where, "'maintainers' must be a list of GitHub usernames, without '@'.")
+    elif len(maintainers) > MAX_MAINTAINERS:
+        report.error(where, "'maintainers' lists {} people; the maximum is {}.".format(len(maintainers), MAX_MAINTAINERS))
 
 
 def validate_skill(skill_dir, report, group_dir=None):
@@ -437,6 +475,8 @@ def validate_collection(skills_dir):
                     children.append(child)
                 elif child.suffix != ".md" and child.name != "LICENSE":
                     report.error(display_path(child), "unexpected file in a skill group; use Markdown documentation or LICENSE.")
+                else:
+                    check_document(child, report)
             if not children:
                 report.error(display_path(entry), "a skill group must contain at least one skill directory.")
             skill_dirs.extend(children)
@@ -445,7 +485,9 @@ def validate_collection(skills_dir):
                 groups.update({child: entry for child in children})
                 if any(child.is_file() and not child.name.startswith(".") for child in entry.iterdir()):
                     resource_groups.add(entry.name)
-        elif entry.name not in COLLECTION_FILES:
+        elif entry.name in COLLECTION_FILES:
+            check_document(entry, report)
+        else:
             report.error(
                 display_path(entry),
                 "unexpected file. Each skill must be a directory, for example "
