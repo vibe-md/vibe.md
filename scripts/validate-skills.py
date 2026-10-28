@@ -261,6 +261,9 @@ SUSPICIOUS_PATTERNS = [
     (re.compile(r"\brm\s+-[a-zA-Z]*r[a-zA-Z]*f[a-zA-Z]*\s+(?:/|~|\$HOME)(?:\s|$)"), "recursively removes a system or home directory"),
 ]
 PACKAGE_METADATA_KEYS = {"title", "summary", "category", "maintainers"}
+# The categories the website lists; any other value is shown under Productivity there.
+# Keep in sync with SKILL_CATEGORIES in the website (src/types/skill.ts).
+CATEGORIES = ("Version Control", "Testing", "Debugging", "Deployment", "Documentation", "Security", "Productivity")
 # Keep package text short enough to fit a catalog card; the website enforces looser limits as a backstop.
 PACKAGE_TEXT_LIMITS = {"title": 80, "summary": 400, "category": 40}
 MAX_MAINTAINERS = 10
@@ -358,26 +361,62 @@ def check_package_metadata(group_dir, report):
         return
     for key in sorted(set(data) - PACKAGE_METADATA_KEYS):
         report.error(where, "unknown package field '{}'. Allowed: {}.".format(key, ", ".join(sorted(PACKAGE_METADATA_KEYS))))
-    for key, limit in PACKAGE_TEXT_LIMITS.items():
+    check_package_text(where, data, PACKAGE_TEXT_LIMITS, report)
+    check_maintainers(where, data.get("maintainers", []), "'maintainers'", "a list of GitHub usernames", report)
+
+
+def check_package_text(where, data, keys, report, prefix=""):
+    """Length and plain-text rules for the package text fields that are present."""
+    for key in keys:
         if key not in data:
             continue
-        value = data[key]
+        value, limit, name = data[key], PACKAGE_TEXT_LIMITS[key], "'{}{}'".format(prefix, key)
         if not isinstance(value, str) or not value.strip():
-            report.error(where, "'{}' must be a non-empty string.".format(key))
+            report.error(where, "{} must be a non-empty string.".format(name))
         elif len(value) > limit:
-            report.error(where, "'{}' is {} characters; the maximum is {}.".format(key, len(value), limit))
+            report.error(where, "{} is {} characters; the maximum is {}.".format(name, len(value), limit))
         elif CONTROL_CHARACTERS.search(value) or "\n" in value:
-            report.error(where, "'{}' must be a single line of plain text.".format(key))
-    maintainers = data.get("maintainers", [])
+            report.error(where, "{} must be a single line of plain text.".format(name))
+
+
+def check_maintainers(where, maintainers, name, shape, report):
     if not isinstance(maintainers, list) or not all(
         isinstance(item, str) and MAINTAINER_PATTERN.fullmatch(item) for item in maintainers
     ):
-        report.error(where, "'maintainers' must be a list of GitHub usernames, without '@'.")
+        report.error(where, "{} must be {}, without '@'.".format(name, shape))
     elif len(maintainers) > MAX_MAINTAINERS:
-        report.error(where, "'maintainers' lists {} people; the maximum is {}.".format(len(maintainers), MAX_MAINTAINERS))
+        report.error(where, "{} lists {} people; the maximum is {}.".format(name, len(maintainers), MAX_MAINTAINERS))
 
 
-def validate_skill(skill_dir, report, group_dir=None):
+def check_standalone_metadata(skill_md, data, report):
+    """A standalone skill is a package of one. It describes itself under 'metadata' in its
+    own frontmatter, using the same fields as a package README (all optional):
+
+        metadata:
+          category: Security
+          maintainers: octocat, hubot
+
+    Agent Skills metadata values are strings, so the maintainers are one comma-separated string.
+    The title and summary come from the name and description unless 'title' is set."""
+    metadata = data.get("metadata") if isinstance(data, dict) else None
+    if not isinstance(metadata, dict):
+        return
+    where = display_path(skill_md)
+    check_package_text(where, metadata, ("title", "category"), report, prefix="metadata.")
+    category = metadata.get("category")
+    if isinstance(category, str) and category.strip() and category not in CATEGORIES:
+        report.error(where, "'metadata.category' is '{}'. Use one of: {}.".format(category, ", ".join(CATEGORIES)))
+    if "maintainers" in metadata:
+        value = metadata["maintainers"]
+        if isinstance(value, str):
+            check_maintainers(where, value.replace(",", " ").split(), "'metadata.maintainers'",
+                              "GitHub usernames separated by commas", report)
+        else:
+            report.error(where, "'metadata.maintainers' must be one string of GitHub usernames separated by "
+                                "commas, for example 'octocat, hubot'.")
+
+
+def validate_skill(skill_dir, report, group_dir=None, standalone=False):
     """Validate one skill directory. Returns its declared name, if any."""
     skill_md = skill_dir / "SKILL.md"
     # Compare names exactly: case-insensitive filesystems (macOS, Windows) would
@@ -420,6 +459,8 @@ def validate_skill(skill_dir, report, group_dir=None):
         return None
 
     name = check_frontmatter(skill_dir, skill_md, data, report)
+    if standalone:
+        check_standalone_metadata(skill_md, data, report)
 
     if not body.strip():
         report.error(
@@ -445,6 +486,7 @@ def validate_collection(skills_dir):
     report = Report()
     entries = sorted(skills_dir.iterdir(), key=lambda p: p.name)
     skill_dirs = []
+    standalone = set()
     groups = {}
     resource_groups = set()
     for entry in entries:
@@ -461,6 +503,7 @@ def validate_collection(skills_dir):
             )
             if not is_group:
                 skill_dirs.append(entry)
+                standalone.add(entry)
                 continue
             if entry.name != "_shared" and (
                 not NAME_PATTERN.fullmatch(entry.name) or len(entry.name) > NAME_MAX_LENGTH
@@ -496,7 +539,7 @@ def validate_collection(skills_dir):
 
     seen = {}
     for skill_dir in skill_dirs:
-        name = validate_skill(skill_dir, report, groups.get(skill_dir))
+        name = validate_skill(skill_dir, report, groups.get(skill_dir), skill_dir in standalone)
         if name is None:
             continue
         group = groups.get(skill_dir)

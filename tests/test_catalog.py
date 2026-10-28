@@ -128,6 +128,69 @@ class CatalogTests(unittest.TestCase):
         self.assertIn("no group resources directory", guide)
         self.assertEqual(self.build("--verify", str(self.out)).returncode, 0)
 
+    # --- standalone skill metadata --------------------------------------------------
+
+    def write_standalone(self, name, metadata=None):
+        block = "metadata:\n" + "".join("  {}: {}\n".format(key, value) for key, value in metadata.items()) if metadata else ""
+        path = self.skills / name
+        path.mkdir(parents=True)
+        (path / "SKILL.md").write_text(
+            "---\nname: {}\ndescription: Does one thing for the user. Use it when testing metadata.\n{}---\n\nBody.\n".format(name, block))
+
+    def test_a_standalone_skill_sets_its_category_maintainers_and_title_in_its_frontmatter(self):
+        self.write_standalone("secret-keeper", {
+            "title": "Secret Keeper", "category": "Security", "maintainers": "octocat, hubot",
+            "collection": "vibe.md", "author": "someone-else"})
+        self.assertEqual(self.build("--all").returncode, 0)
+        package = self.package("secret-keeper")
+        self.assertEqual(package["title"], "Secret Keeper")
+        self.assertEqual(package["category"], "Security")
+        self.assertEqual(package["maintainers"], ["octocat", "hubot"])  # 'author' is not a maintainer list
+        self.assertEqual(package["summary"], "Does one thing for the user. Use it when testing metadata.")
+        self.assertEqual(package["kind"], "standalone")
+        self.assertEqual(self.build("--verify", str(self.out)).returncode, 0)
+
+    def test_a_standalone_skill_without_metadata_falls_back_to_derived_values(self):
+        self.write_standalone("plain-skill")
+        self.assertEqual(self.build("--all").returncode, 0)
+        package = self.package("plain-skill")
+        self.assertEqual(package["title"], "Plain Skill")
+        self.assertEqual(package["maintainers"], [])
+        self.assertNotIn("category", package)  # the website files an uncategorised package under Productivity
+
+    def test_each_standalone_field_is_optional_on_its_own(self):
+        self.write_standalone("only-category", {"category": "Testing"})
+        self.write_standalone("only-maintainers", {"maintainers": "octocat"})
+        self.assertEqual(self.build("--all").returncode, 0)
+        self.assertEqual(self.package("only-category")["category"], "Testing")
+        self.assertEqual(self.package("only-category")["maintainers"], [])
+        self.assertEqual(self.package("only-category")["title"], "Only Category")
+        self.assertEqual(self.package("only-maintainers")["maintainers"], ["octocat"])
+        self.assertNotIn("category", self.package("only-maintainers"))
+
+    def test_standalone_maintainers_may_be_separated_by_commas_or_spaces(self):
+        self.write_standalone("many-hands", {"maintainers": "a,b c , d"})
+        self.assertEqual(self.build("--all").returncode, 0)
+        self.assertEqual(self.package("many-hands")["maintainers"], ["a", "b", "c", "d"])
+
+    def test_a_standalone_summary_always_comes_from_the_description(self):
+        self.write_standalone("fixed-summary", {"summary": "Not used", "version": "'2'"})
+        self.assertEqual(self.build("--all").returncode, 0)
+        self.assertEqual(self.package("fixed-summary")["summary"], "Does one thing for the user. Use it when testing metadata.")
+
+    def test_a_group_package_still_takes_its_metadata_only_from_its_readme(self):
+        before = self.build("--all")
+        self.assertEqual(before.returncode, 0)
+        expected = self.package("alpha")
+        expected.pop("artifacts")  # the archives legitimately change with the edited skill
+        (self.skills / "alpha" / "alpha-save" / "SKILL.md").write_text(
+            "---\nname: alpha-save\ndescription: A skill used to test catalog generation. Use it when testing.\n"
+            "metadata:\n  category: Security\n  maintainers: intruder\n  title: Hijacked\n---\n\nInstructions.\n")
+        self.assertEqual(self.build("--all").returncode, 0)
+        actual = self.package("alpha")
+        actual.pop("artifacts")
+        self.assertEqual(actual, expected)
+
     def test_a_standalone_package_installs_by_skill_name_next_to_a_group(self):
         write_skill(self.skills / "lonely", "lonely")
         self.assertEqual(self.build("--all").returncode, 0)

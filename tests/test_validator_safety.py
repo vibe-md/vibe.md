@@ -198,5 +198,91 @@ class SafetyTests(unittest.TestCase):
         self.assertEqual(self.validate().returncode, 0)
 
 
+class StandaloneMetadataTests(unittest.TestCase):
+    """A standalone skill describes itself under 'metadata' in its own frontmatter."""
+
+    validate = SafetyTests.validate
+
+    def setUp(self):
+        self.root = Path(tempfile.mkdtemp(prefix="vibe-md-validate-"))
+        self.skills = self.root / "skills"
+        self.solo = self.skills / "solo-skill"
+        self.solo.mkdir(parents=True)
+
+    def tearDown(self):
+        shutil.rmtree(str(self.root))
+
+    def write(self, metadata=""):
+        block = "metadata:\n{}\n".format(metadata) if metadata else ""
+        (self.solo / "SKILL.md").write_text(
+            "---\nname: solo-skill\ndescription: A standalone skill that is published as a package of one skill.\n"
+            "{}---\n\nBody.\n".format(block))
+
+    def rejected(self, metadata, message):
+        self.write(metadata)
+        result = self.validate()
+        self.assertEqual(result.returncode, 1, result.stdout)
+        self.assertIn(message, result.stdout)
+
+    def test_a_skill_without_package_metadata_is_still_valid(self):
+        self.write()
+        result = self.validate()
+        self.assertEqual(result.returncode, 0, result.stdout)
+        self.assertNotIn("warning:", result.stdout)
+
+    def test_the_existing_metadata_conventions_are_untouched(self):
+        self.write("  collection: vibe.md\n  author: octocat\n  version: '1.0'\n  anything-else: whatever")
+        self.assertEqual(self.validate().returncode, 0)
+
+    def test_valid_package_metadata_passes(self):
+        self.write("  category: Security\n  maintainers: octocat, hubot\n  title: Secret Guard\n  collection: vibe.md")
+        result = self.validate()
+        self.assertEqual(result.returncode, 0, result.stdout)
+        self.assertNotIn("warning:", result.stdout)
+
+    def test_every_supported_category_is_accepted(self):
+        for category in ("Version Control", "Testing", "Debugging", "Deployment", "Documentation", "Security", "Productivity"):
+            self.write("  category: {}".format(category))
+            self.assertEqual(self.validate().returncode, 0, category)
+
+    def test_an_unknown_category_is_rejected_with_the_allowed_list(self):
+        self.rejected("  category: Databases", "'metadata.category' is 'Databases'. Use one of: Version Control,")
+        self.rejected("  category: security", "Use one of:")
+
+    def test_a_category_must_be_a_non_empty_string(self):
+        self.rejected("  category: ''", "'metadata.category' must be a non-empty string")
+        self.rejected("  category: 7", "'metadata.category' must be a non-empty string")
+
+    def test_maintainers_are_one_comma_separated_string_of_github_usernames(self):
+        for value in ("octocat", "octocat, hubot", "octocat hubot", "a,b,c", "''"):
+            self.write("  maintainers: {}".format(value))
+            self.assertEqual(self.validate().returncode, 0, value)
+
+    def test_maintainers_written_as_a_list_get_a_clear_message(self):
+        self.rejected("  maintainers: [octocat]", "must be one string of GitHub usernames separated by commas")
+
+    def test_invalid_maintainer_handles_are_rejected(self):
+        for value in ("'@octocat'", "not/valid", "-start", "x" * 40):
+            self.rejected("  maintainers: {}".format(value), "'metadata.maintainers' must be GitHub usernames separated by commas, without '@'")
+
+    def test_too_many_maintainers_are_rejected(self):
+        self.rejected("  maintainers: {}".format(", ".join("user{}".format(n) for n in range(11))), "lists 11 people")
+
+    def test_title_has_the_same_limits_as_a_package_title(self):
+        self.rejected("  title: {}".format("T" * 81), "'metadata.title' is 81 characters; the maximum is 80")
+        self.rejected("  title: ''", "'metadata.title' must be a non-empty string")
+        self.rejected('  title: "two\\nlines"', "'metadata.title' must be a single line of plain text")
+
+    def test_package_fields_inside_a_group_are_not_package_metadata(self):
+        # Only a standalone skill describes its own package; a group skill's frontmatter is unchanged.
+        group = self.skills / "demo" / "demo-audit"
+        group.mkdir(parents=True)
+        (group / "SKILL.md").write_text(
+            "---\nname: demo-audit\ndescription: Checks a project for common problems. Use when asked for a demo audit.\n"
+            "metadata:\n  category: Not A Category\n  maintainers: ['@bad handle']\n---\n\nBody.\n")
+        self.write()
+        self.assertEqual(self.validate().returncode, 0)
+
+
 if __name__ == "__main__":
     unittest.main()
