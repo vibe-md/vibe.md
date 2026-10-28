@@ -8,6 +8,8 @@
 #
 #   bash scripts/install.sh --list
 #   bash scripts/install.sh --skill <name> --agent <agent> [--project <dir>]
+#   bash scripts/install.sh --group <name> --agent <agent> [--project <dir>]
+#   bash scripts/install.sh --uninstall --group <name> --agent <agent>
 #
 # Run with --help for all options. Works with bash 3.2+ on macOS and Linux,
 # and on Windows through WSL or Git Bash.
@@ -116,6 +118,7 @@ Usage:
   install.sh --list
   install.sh --skill <name> --agent <agent> [options]
   install.sh --group <name> --agent <agent> [options]
+  install.sh --uninstall (--skill <name> | --group <name>) --agent <agent> [options]
 
 Options:
   --skill <name>        One skill to install (see --list).
@@ -124,6 +127,8 @@ Options:
   --project <dir>       Project to install into (default: current directory).
   --dry-run             Show what would happen without writing anything.
   --force               Replace an existing, different copy of the skill.
+  --uninstall           Remove a skill or group this installer installed. Only files
+                        that still match what was installed are removed.
   --list                List the skills available to install.
   --skills-dir <dir>    Use a local skills collection instead of the default.
   --ref <ref>           Branch or tag to download when running remotely
@@ -143,6 +148,12 @@ own (for example piped from curl), the collection is downloaded from
 ${REPO_URL}.
 
 Shared skills (including the vibe router) are included with every installation.
+Run the same install command again to update: a skill you have not modified is
+updated in place, while a modified or unknown copy stops the installation unless
+you pass --force. Each installation records what it installed in
+<agent skills dir>/../.vibe-md/<package>.receipt, which is what makes updates and
+removal safe. Installations made before receipts existed are adopted by running
+the install command again.
 The installer only copies files. It never runs a skill's scripts, never needs
 sudo, and never writes outside the target project.
 EOF
@@ -413,6 +424,278 @@ rollback_install() {
   die "installation failed. Previous copies were restored; no new skills remain installed."
 }
 
+# ---------------------------------------------------------------------------
+# Ownership receipts
+#
+# A receipt lists the SHA-256 of every file an installation put in place. It is
+# what lets later updates and removals tell files that belong to a package from
+# files the user created or edited. Receipts live beside the skills directory
+# (for example .claude/.vibe-md/), never inside a skill.
+# ---------------------------------------------------------------------------
+HAVE_HASH=0
+if command -v sha256sum >/dev/null 2>&1 || command -v shasum >/dev/null 2>&1; then HAVE_HASH=1; fi
+RECEIPTS_DIR=""
+PACKAGE=""
+
+warn() {
+  printf 'warning: %s\n' "$1" >&2
+}
+
+# True when a space-separated list (written as " a b ") contains an item.
+in_list() {
+  case "$1" in
+    *" $2 "*) return 0 ;;
+  esac
+  return 1
+}
+
+sha256_of() {
+  if command -v sha256sum >/dev/null 2>&1; then
+    sha256sum "$1" | cut -d' ' -f1
+  else
+    shasum -a 256 "$1" | cut -d' ' -f1
+  fi
+}
+
+# "<sha256>  <name>/<relative path>" for every file under a directory, sorted.
+dir_entries() {
+  local dir="$1" prefix="$2" file rel
+  (cd "$dir" && find . -type f | LC_ALL=C sort) | while IFS= read -r file; do
+    rel="${file#./}"
+    printf '%s  %s/%s\n' "$(sha256_of "$dir/$rel")" "$prefix" "$rel"
+  done | LC_ALL=C sort
+}
+
+# Receipt lines (without comments) for one installed directory, from a file or stdin.
+receipt_lines_for() {
+  awk -v p="$1/" 'substr($0, 1, 1) != "#" && substr($0, 67, length(p)) == p'
+}
+
+# Entries recorded by any receipt for one installed directory.
+recorded_entries_for() {
+  local f
+  for f in "$RECEIPTS_DIR"/*.receipt; do
+    [ -f "$f" ] || continue
+    cat "$f"
+  done | receipt_lines_for "$1" | LC_ALL=C sort -u
+}
+
+# True when a directory still holds exactly the files a receipt recorded.
+managed_unmodified() {
+  local dest="$1" name="$2" recorded actual
+  [ "$HAVE_HASH" = "1" ] || return 1
+  [ -d "$dest" ] && [ ! -L "$dest" ] || return 1
+  [ -d "$RECEIPTS_DIR" ] || return 1
+  recorded="$(recorded_entries_for "$name")"
+  [ -n "$recorded" ] || return 1
+  actual="$(dir_entries "$dest" "$name")"
+  [ "$recorded" = "$actual" ]
+}
+
+compute_package() {
+  local source parent
+  if [ -n "$GROUP" ]; then
+    PACKAGE="$GROUP"
+    return
+  fi
+  source="${SELECTED[0]}"
+  parent="$(dirname "$source")"
+  if [ "$parent" = "$SKILLS_DIR" ] || [ "$parent" = "$SKILLS_DIR/_shared" ]; then
+    PACKAGE="$(basename "$source")"
+  else
+    PACKAGE="$(basename "$parent")"
+  fi
+}
+
+write_receipt() {
+  local skills_root="$1" source name file tmp names=" "
+  [ "$HAVE_HASH" = "1" ] || return 0
+  mkdir -p "$RECEIPTS_DIR" 2>/dev/null || { warn "could not record this installation in '$RECEIPTS_DIR'."; return 0; }
+  file="$RECEIPTS_DIR/$PACKAGE.receipt"
+  tmp="$file.tmp.$$"
+  for source in "${SELECTED[@]}"; do names="$names$(basename "$source") "; done
+  {
+    printf '# vibe.md install receipt v1\n# package: %s\n# agent: %s\n' "$PACKAGE" "$AGENT"
+    {
+      if [ -f "$file" ]; then
+        awk -v names="$names" 'substr($0, 1, 1) == "#" { next }
+          { p = substr($0, 67); sub(/\/.*/, "", p); if (index(names, " " p " ") == 0) print }' "$file"
+      fi
+      for source in "${SELECTED[@]}"; do
+        name="$(basename "$source")"
+        dir_entries "$skills_root/$name" "$name"
+      done
+    } | LC_ALL=C sort -u
+  } > "$tmp" 2>/dev/null && mv "$tmp" "$file" 2>/dev/null ||
+    { rm -f "$tmp"; warn "could not record this installation in '$RECEIPTS_DIR'."; }
+}
+
+# Remove one regular file below the skills directory. Refuses anything else.
+remove_owned_file() {
+  local root="${1:?}" path="${2:?}"
+  case "$path" in
+    /* | *..*) return 1 ;;
+  esac
+  [ -f "$root/$path" ] && [ ! -L "$root/$path" ] || return 1
+  rm -f -- "${root:?}/${path:?}"
+}
+
+# Remove a skill or group that this installer installed, touching only files
+# that still match what was installed.
+uninstall_package() {
+  local project rel skills_root label target entries line hash path top other f remaining
+  local kept=0 removed=0 shared=0 plan="" tops=" "
+
+  label="$(agent_label "$AGENT")"
+  rel="$(agent_skills_dir "$AGENT")"
+  [ -d "$PROJECT" ] || die "project directory not found: $PROJECT"
+  project="$(cd "$PROJECT" && pwd -P)"
+  skills_root="$project/$rel"
+  check_destination_inside_project "$project" "$rel"
+  RECEIPTS_DIR="$(dirname "$skills_root")/.vibe-md"
+  [ -d "$skills_root" ] || die "nothing is installed for $label in '$skills_root'."
+
+  target=""
+  if [ -n "$GROUP" ] && [ -f "$RECEIPTS_DIR/$GROUP.receipt" ]; then
+    target="$RECEIPTS_DIR/$GROUP.receipt"
+  elif [ -n "$SKILL" ]; then
+    for f in "$RECEIPTS_DIR"/*.receipt; do
+      [ -f "$f" ] || continue
+      if [ -n "$(receipt_lines_for "$SKILL" < "$f")" ]; then
+        target="$f"
+        break
+      fi
+    done
+  fi
+
+  if [ -z "$target" ]; then
+    uninstall_without_receipt "$skills_root" "$label"
+    return
+  fi
+
+  # Entries to remove: the whole package, or one skill of it.
+  if [ -n "$SKILL" ]; then
+    entries="$(receipt_lines_for "$SKILL" < "$target")"
+  else
+    entries="$(awk 'substr($0, 1, 1) != "#"' "$target")"
+  fi
+
+  while IFS= read -r line; do
+    [ -n "$line" ] || continue
+    hash="${line%%  *}"
+    path="${line#*  }"
+    top="${path%%/*}"
+    # A directory another package also installed (for example the shared router) stays.
+    other=""
+    for f in "$RECEIPTS_DIR"/*.receipt; do
+      [ -f "$f" ] && [ "$f" != "$target" ] || continue
+      if [ -n "$(receipt_lines_for "$top" < "$f")" ]; then
+        other="$(basename "$f" .receipt)"
+        break
+      fi
+    done
+    if [ -n "$other" ]; then
+      case "$tops" in
+        *" $top "*) ;;
+        *) tops="$tops$top "; echo "Keeping '$top': it is also used by '$other'." ;;
+      esac
+      shared=$((shared + 1))
+      continue
+    fi
+    f="$skills_root/$path"
+    if [ -L "$f" ]; then
+      echo "Keeping '$rel/$path': it is a symbolic link now."
+      kept=$((kept + 1))
+    elif [ ! -e "$f" ]; then
+      :
+    elif [ "$(sha256_of "$f")" = "$hash" ]; then
+      plan="$plan$path
+"
+      removed=$((removed + 1))
+    else
+      echo "Keeping '$rel/$path': it was modified after installation."
+      kept=$((kept + 1))
+    fi
+  done <<EOF
+$entries
+EOF
+
+  if [ "$DRY_RUN" = "1" ]; then
+    echo "Dry run: nothing will be removed."
+    printf '%s' "$plan" | while IFS= read -r path; do
+      if [ -n "$path" ]; then echo "  Would remove: $rel/$path"; fi
+    done
+    echo "$removed file(s) would be removed, $kept kept because they were modified."
+    return 0
+  fi
+
+  printf '%s' "$plan" | while IFS= read -r path; do
+    if [ -n "$path" ]; then remove_owned_file "$skills_root" "$path" || true; fi
+  done
+  # Drop directories this removal emptied; anything left holds files that are not ours to delete.
+  printf '%s' "$plan" | awk -F/ 'NF > 1 { print $1 }' | LC_ALL=C sort -u | while IFS= read -r top; do
+    if [ -n "$top" ] && [ -d "$skills_root/$top" ]; then
+      find "$skills_root/$top" -depth -type d -empty -exec rmdir {} \; 2>/dev/null || true
+    fi
+  done
+
+  # Keep receipt lines for anything that stayed; delete the receipt when nothing is left.
+  # Entries for shared directories are dropped too: the other package's receipt still records them.
+  remaining="$(awk 'substr($0, 1, 1) != "#"' "$target" | while IFS= read -r line; do
+    path="${line#*  }"
+    top="${path%%/*}"
+    if in_list "$tops" "$top"; then continue; fi
+    if ! printf '%s' "$plan" | grep -Fxq -- "$path"; then printf '%s\n' "$line"; fi
+  done)"
+  if [ -z "$remaining" ]; then
+    rm -f "$target"
+  else
+    { awk 'substr($0, 1, 1) == "#"' "$target"; printf '%s\n' "$remaining"; } > "$target.tmp.$$" &&
+      mv "$target.tmp.$$" "$target"
+  fi
+  rmdir "$RECEIPTS_DIR" 2>/dev/null || true
+  echo "Removed $removed file(s) for $label. Kept $kept modified file(s) and $shared shared file(s)."
+}
+
+# Installations made before receipts existed: remove only copies that are still
+# byte-for-byte identical to the source, and never remove shared skills.
+uninstall_without_receipt() {
+  local skills_root="$1" label="$2" source name dest removed=0 kept=0 rel
+  rel="$(agent_skills_dir "$AGENT")"
+  resolve_skills_dir
+  discover_skills
+  select_skills
+  prepare_selection
+  for source in "${SELECTED[@]}"; do
+    name="$(basename "$source")"
+    dest="$skills_root/$name"
+    if [ -e "$dest" ] || [ -L "$dest" ]; then
+      if [ -d "$dest" ] && [ ! -L "$dest" ] && diff -r -q "$source" "$dest" >/dev/null 2>&1; then
+        # Shared skills may belong to other packages, and there is no record of that.
+        if [ -d "$SKILLS_DIR/_shared/$name" ]; then
+          echo "Keeping '$rel/$name': shared skills are only removed with ownership records."
+          kept=$((kept + 1))
+        elif [ "$DRY_RUN" = "1" ]; then
+          echo "  Would remove: $rel/$name"
+          removed=$((removed + 1))
+        else
+          rm -rf -- "${skills_root:?}/${name:?}"
+          removed=$((removed + 1))
+        fi
+      else
+        echo "Keeping '$rel/$name': it differs from the vibe.md version."
+        kept=$((kept + 1))
+      fi
+    fi
+  done
+  echo "No installation record found; compared with the vibe.md source instead."
+  if [ "$DRY_RUN" = "1" ]; then
+    echo "Dry run: $removed director(ies) would be removed, $kept kept."
+  else
+    echo "Removed $removed director(ies) for $label. Kept $kept."
+  fi
+}
+
 install_skills() {
   local source name label rel project skills_root dest action parent entry i
   local actions=() changes=0
@@ -423,6 +706,7 @@ install_skills() {
   project="$(cd "$PROJECT" && pwd -P)"
   skills_root="$project/$rel"
   check_destination_inside_project "$project" "$rel"
+  RECEIPTS_DIR="$(dirname "$skills_root")/.vibe-md"
 
   # Inspect every selected source and destination before creating anything.
   for source in "${SELECTED[@]}"; do
@@ -437,9 +721,12 @@ install_skills() {
         action="skip"
       elif [ "$FORCE" = "1" ]; then
         action="replace"
+      elif managed_unmodified "$dest" "$name"; then
+        action="update"
       else
         die "'$dest' already exists and differs from the vibe.md version of '$name'." \
-          "Nothing was changed. Re-run with --force to replace it, or move it away first."
+          "Nothing was changed. Re-run with --force to replace it, or move it away first." \
+          "(A copy this installer installed and you have not edited is updated without --force.)"
       fi
     fi
     actions+=("$action")
@@ -478,7 +765,7 @@ install_skills() {
       [ "${actions[$i]}" != "skip" ] || continue
       name="$(basename "${SELECTED[$i]}")"
       dest="$skills_root/$name"
-      if [ "${actions[$i]}" = "replace" ]; then
+      if [ "${actions[$i]}" = "replace" ] || [ "${actions[$i]}" = "update" ]; then
         mv "$dest" "$STAGE_DIR/previous/$name" || rollback_install "$skills_root"
       fi
       CHANGED+=("$name")
@@ -493,9 +780,11 @@ install_skills() {
     case "${actions[$i]}" in
       skip) echo "'$name' is already installed for $label and up to date: $skills_root/$name" ;;
       replace) echo "Replaced '$name' for $label: $skills_root/$name" ;;
+      update) echo "Updated '$name' for $label: $skills_root/$name" ;;
       install) echo "Installed '$name' for $label: $skills_root/$name" ;;
     esac
   done
+  write_receipt "$skills_root"
   echo
   agent_next_steps "$AGENT" "$entry"
 }
@@ -512,6 +801,7 @@ main() {
   REF="$DEFAULT_REF"
   DRY_RUN=0
   FORCE=0
+  UNINSTALL=0
   local list=0 opt value
 
   while [ $# -gt 0 ]; do
@@ -543,6 +833,7 @@ main() {
       --list) list=1 ;;
       --dry-run) DRY_RUN=1 ;;
       --force) FORCE=1 ;;
+      --uninstall) UNINSTALL=1 ;;
       -h | --help)
         usage
         exit 0
@@ -575,9 +866,15 @@ main() {
     usage_error "unknown agent '$AGENT'. Choose one of: ${SUPPORTED_AGENTS// /, }."
   PROJECT="${PROJECT:-$PWD}"
 
+  if [ "$UNINSTALL" = "1" ]; then
+    uninstall_package
+    exit 0
+  fi
+
   resolve_skills_dir
   discover_skills
   select_skills
+  compute_package
   prepare_selection
   install_skills
 }
