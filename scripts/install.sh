@@ -773,6 +773,10 @@ install_skills() {
     done
   fi
 
+  # Record the installation before printing anything, so closing the output early
+  # (for example `| head`) can never leave files installed without a record.
+  write_receipt "$skills_root"
+
   entry="$ENTRY_SKILL"
   for ((i=0; i<${#SELECTED[@]}; i++)); do
     source="${SELECTED[$i]}"
@@ -784,7 +788,6 @@ install_skills() {
       install) echo "Installed '$name' for $label: $skills_root/$name" ;;
     esac
   done
-  write_receipt "$skills_root"
   echo
   agent_next_steps "$AGENT" "$entry"
 }

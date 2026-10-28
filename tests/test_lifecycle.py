@@ -66,6 +66,15 @@ class LifecycleTests(base.InstallerTestCase):
         self.assertEqual(self.package("alpha").returncode, 0)
         self.assertEqual({p.name for p in self.dest.iterdir()}, {"alpha-save", "alpha-status", "alpha", "router"})
 
+    def test_the_record_is_written_even_if_the_output_is_closed_early(self):
+        import shlex
+        import subprocess
+        command = "bash {} --group alpha --agent codex --skills-dir {} --project {} | head -n 1".format(
+            shlex.quote(str(base.INSTALLER)), shlex.quote(str(self.skills)), shlex.quote(str(self.project)))
+        subprocess.run(["bash", "-c", command], capture_output=True, text=True, env={"PATH": "/usr/bin:/bin:/usr/local/bin", "HOME": str(self.home)})
+        self.assertTrue((self.receipts / "alpha.receipt").is_file())
+        self.assertTrue((self.dest / "alpha-save/SKILL.md").is_file())
+
     def test_reinstalling_is_a_no_op(self):
         self.assertEqual(self.package("alpha").returncode, 0)
         before = tree(self.project)
