@@ -1,0 +1,28 @@
+{
+  "description": "Natural-language requests and the skill an agent should select. Used to check automatic skill selection by hand or with a script; see evals/README.md.",
+  "scenarios": [
+    {"id": "branch-feature", "prompt": "Create a new branch for my authentication feature.", "language": "en", "kind": "positive", "expected": ["gitly-branches"]},
+    {"id": "branch-experiment", "prompt": "I want to try a new dashboard design without breaking my app.", "language": "en", "kind": "positive", "expected": ["gitly-branches"]},
+    {"id": "save-today", "prompt": "Save everything I did today.", "language": "en", "kind": "positive", "expected": ["gitly-save"]},
+    {"id": "save-he", "prompt": "שמור את ההתקדמות שלי", "language": "he", "kind": "positive", "expected": ["gitly-save"]},
+    {"id": "compare-yesterday", "prompt": "What changed since yesterday?", "language": "en", "kind": "positive", "expected": ["gitly-compare"]},
+    {"id": "compare-he", "prompt": "מה השתנה מאתמול?", "language": "he", "kind": "positive", "expected": ["gitly-compare"]},
+    {"id": "history-last-five", "prompt": "Show me the last five versions of the project.", "language": "en", "kind": "positive", "expected": ["gitly-history"]},
+    {"id": "status-backed-up", "prompt": "Is my work safe, or could I lose it?", "language": "en", "kind": "positive", "expected": ["gitly-status"]},
+    {"id": "check-broke", "prompt": "The login page stopped working after the last few prompts. What happened?", "language": "en", "kind": "positive", "expected": ["gitly-check"]},
+    {"id": "restore-morning", "prompt": "Go back to the version from this morning, I do not like where this went.", "language": "en", "kind": "positive", "expected": ["gitly-restore"]},
+    {"id": "merge-experiment", "prompt": "Put the changes from my experiment into my main project.", "language": "en", "kind": "positive", "expected": ["gitly-merge"]},
+    {"id": "github-connect", "prompt": "Connect this project to GitHub.", "language": "en", "kind": "positive", "expected": ["gitly-github-connect"]},
+    {"id": "sync-push", "prompt": "Push my latest work to GitHub.", "language": "en", "kind": "positive", "expected": ["gitly-sync"]},
+    {"id": "settings-always", "prompt": "From now on, always save online after you commit.", "language": "en", "kind": "positive", "expected": ["gitly-settings"]},
+    {"id": "setup-git", "prompt": "Set up Git for this project.", "language": "en", "kind": "positive", "expected": ["gitly-setup"]},
+    {"id": "setup-he", "prompt": "הגדר גיט בפרויקט הזה", "language": "he", "kind": "positive", "expected": ["gitly-setup"]},
+    {"id": "ambiguous-backup", "prompt": "Back it up.", "language": "en", "kind": "ambiguous", "expected": ["gitly-sync", "gitly-github-connect", "gitly-status"], "notes": "Acceptable: pick one of these, or ask which kind of backup is meant. Not acceptable: act without asking when no remote exists."},
+    {"id": "ambiguous-undo", "prompt": "Undo that.", "language": "en", "kind": "ambiguous", "expected": ["gitly-restore", "gitly-check", "gitly-compare"], "notes": "Acceptable: investigate first (check or compare) or ask. Not acceptable: restore files without confirmation."},
+    {"id": "negative-code", "prompt": "Write a function that sorts a list of users by last name.", "language": "en", "kind": "negative", "expected": []},
+    {"id": "negative-explain", "prompt": "Explain what a closure is in JavaScript.", "language": "en", "kind": "negative", "expected": []},
+    {"id": "negative-settings-word", "prompt": "Add a dark mode switch to the app's settings page.", "language": "en", "kind": "negative", "expected": [], "notes": "Shares the word 'settings' with gitly-settings but is ordinary feature work."},
+    {"id": "negative-branch-word", "prompt": "Add a 'branch' field to the store locator form.", "language": "en", "kind": "negative", "expected": [], "notes": "Shares the word 'branch' with gitly-branches but is ordinary feature work."},
+    {"id": "negative-translate", "prompt": "Translate this paragraph to French.", "language": "en", "kind": "negative", "expected": []}
+  ]
+}

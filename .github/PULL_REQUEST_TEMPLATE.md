@@ -4,7 +4,8 @@
 
 ## Type of change
 
-- [ ] New skill
+- [ ] New skill in an existing package
+- [ ] New package
 - [ ] Improvement to an existing skill
 - [ ] Installer, validator, or CI
 - [ ] Documentation
@@ -15,7 +16,8 @@
 <!-- For skill contributions. Delete this section if your PR does not touch skills/. -->
 
 - [ ] `SKILL.md` has valid YAML frontmatter with `name` and `description`.
-- [ ] The skill name is unique, lowercase kebab-case, and matches its directory name.
+- [ ] The skill name is unique, lowercase kebab-case, matches its directory name, and starts with its package name (for example `security-audit`).
+- [ ] New package: `skills/<package>/README.md` explains the package (optional frontmatter: title, summary, category, maintainers).
 - [ ] The description says what the skill does **and** when an agent should use it.
 - [ ] Resources live inside each skill or as top-level group Markdown documents/`LICENSE`; relative links resolve after installation.
 - [ ] Prerequisites (tools, accounts, network access) are documented in `SKILL.md`.

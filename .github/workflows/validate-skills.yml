@@ -52,7 +52,25 @@ jobs:
         if: runner.os == 'Linux'
         run: shellcheck scripts/install.sh
 
-      - name: Run validator, installer, packaging, and workflow tests
+      - name: Lint workflows with actionlint
+        if: runner.os == 'Linux'
+        env:
+          # A pinned release. The archive must match its published SHA-256 before it runs.
+          ACTIONLINT_VERSION: "1.7.12"
+          ACTIONLINT_SHA256: "8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8"
+        run: |
+          curl -fsSL -o "$RUNNER_TEMP/actionlint.tar.gz" "https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz"
+          echo "${ACTIONLINT_SHA256}  $RUNNER_TEMP/actionlint.tar.gz" | sha256sum --check --strict
+          tar -xzf "$RUNNER_TEMP/actionlint.tar.gz" -C "$RUNNER_TEMP" actionlint
+          "$RUNNER_TEMP/actionlint"
+
+      - name: Build every package and the catalog
+        run: python scripts/build-packages.py --all --output-dir "$RUNNER_TEMP/downloads" --ref "$GITHUB_SHA"
+
+      - name: Verify the catalog against the source
+        run: python scripts/build-packages.py --verify "$RUNNER_TEMP/downloads"
+
+      - name: Run validator, installer, lifecycle, packaging, and catalog tests
         run: python -m unittest discover -s tests -v
 
   # Single, stable check to require in branch protection, independent of the matrix.
