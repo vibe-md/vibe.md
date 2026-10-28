@@ -598,8 +598,10 @@ uninstall_package() {
     return
   fi
 
-  # Entries to remove: the whole package, or one skill of it.
-  if [ -n "$SKILL" ]; then
+  # Entries to remove: the whole package, or one skill of it. A standalone skill is a package
+  # of one and its receipt carries its name, so removing it ends the package, shared router
+  # included (unless another package still uses that, handled below).
+  if [ -n "$SKILL" ] && [ "$(basename "$target" .receipt)" != "$SKILL" ]; then
     entries="$(receipt_lines_for "$SKILL" < "$target")"
   else
     entries="$(awk 'substr($0, 1, 1) != "#"' "$target")"
