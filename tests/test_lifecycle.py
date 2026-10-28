@@ -314,5 +314,177 @@ class LifecycleTests(base.InstallerTestCase):
         self.assertEqual(tree(self.project), first)
 
 
+class StandaloneLifecycleTests(base.InstallerTestCase):
+    """A standalone skill is a package of one: removing it ends the package, including the
+    shared router it brought along, unless another installed package still uses that."""
+
+    def setUp(self):
+        super().setUp()
+        self.skills = self.root / "packages"
+        for name in ("solo-tool", "solo-other"):
+            LifecycleTests.write_skill(self.skills / name, name, "first version")
+        LifecycleTests.write_skill(self.skills / "_shared" / "router", "router", "first version")
+        (self.skills / "alpha").mkdir()
+        (self.skills / "alpha" / "README.md").write_text("# alpha\n")
+        LifecycleTests.write_skill(self.skills / "alpha" / "alpha-save", "alpha-save", "first version")
+        self.dest = self.project / ".agents/skills"
+        self.receipts = self.project / ".agents/.vibe-md"
+
+    def add(self, selector, name, agent="codex", skills=None):
+        return self.run_installer(
+            selector, name, "--agent", agent, "--skills-dir", str(skills or self.skills),
+            "--project", str(self.project),
+        )
+
+    def remove(self, name, *extra, agent="codex", skills=None):
+        return self.run_installer(
+            "--uninstall", "--skill", name, "--agent", agent, "--skills-dir", str(skills or self.skills),
+            "--project", str(self.project), *extra,
+        )
+
+    def test_a_standalone_skill_uninstalls_completely_by_name(self):
+        self.assertEqual(self.add("--skill", "solo-tool").returncode, 0)
+        self.assertTrue((self.dest / "router/SKILL.md").is_file())
+        self.assertTrue((self.receipts / "solo-tool.receipt").is_file())
+        result = self.remove("solo-tool")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(tree(self.project), {})
+        self.assertFalse(self.receipts.exists(), "an orphan receipt was left behind")
+
+    def test_the_shared_router_stays_while_another_standalone_skill_needs_it(self):
+        self.assertEqual(self.add("--skill", "solo-tool").returncode, 0)
+        self.assertEqual(self.add("--skill", "solo-other").returncode, 0)
+        result = self.remove("solo-tool")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("Keeping 'router': it is also used by 'solo-other'.", result.stdout)
+        self.assertFalse((self.dest / "solo-tool").exists())
+        self.assertTrue((self.dest / "solo-other/SKILL.md").is_file())
+        self.assertTrue((self.dest / "router/SKILL.md").is_file())
+        self.assertFalse((self.receipts / "solo-tool.receipt").exists())
+        self.assertIn("router/SKILL.md", (self.receipts / "solo-other.receipt").read_text())
+        self.assertEqual(self.remove("solo-other").returncode, 0)
+        self.assertEqual(tree(self.project), {})
+        self.assertFalse(self.receipts.exists())
+
+    def test_removing_a_standalone_skill_leaves_a_group_intact_and_the_group_cleans_up_after(self):
+        self.assertEqual(self.add("--group", "alpha").returncode, 0)
+        self.assertEqual(self.add("--skill", "solo-tool").returncode, 0)
+        grouped = {path: data for path, data in tree(self.project).items() if "solo-tool" not in path}
+        result = self.remove("solo-tool")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(tree(self.project), grouped)
+        self.assertTrue((self.receipts / "alpha.receipt").is_file())
+        self.assertFalse((self.receipts / "solo-tool.receipt").exists())
+        uninstall = self.run_installer(
+            "--uninstall", "--group", "alpha", "--agent", "codex", "--skills-dir", str(self.skills),
+            "--project", str(self.project),
+        )
+        self.assertEqual(uninstall.returncode, 0, uninstall.stderr)
+        self.assertEqual(tree(self.project), {})
+        self.assertFalse(self.receipts.exists())
+
+    def test_removing_a_group_first_keeps_the_router_for_the_standalone_skill(self):
+        self.assertEqual(self.add("--group", "alpha").returncode, 0)
+        self.assertEqual(self.add("--skill", "solo-tool").returncode, 0)
+        uninstall = self.run_installer(
+            "--uninstall", "--group", "alpha", "--agent", "codex", "--skills-dir", str(self.skills),
+            "--project", str(self.project),
+        )
+        self.assertEqual(uninstall.returncode, 0, uninstall.stderr)
+        self.assertIn("Keeping 'router': it is also used by 'solo-tool'.", uninstall.stdout)
+        self.assertFalse((self.dest / "alpha-save").exists())
+        self.assertFalse((self.receipts / "alpha.receipt").exists())
+        self.assertTrue((self.dest / "router/SKILL.md").is_file())
+        self.assertTrue((self.dest / "solo-tool/SKILL.md").is_file())
+        self.assertTrue((self.receipts / "solo-tool.receipt").is_file())
+        self.assertEqual(self.remove("solo-tool").returncode, 0)
+        self.assertEqual(tree(self.project), {})
+        self.assertFalse(self.receipts.exists())
+
+    def test_real_gitly_is_untouched_by_installing_and_removing_a_standalone_skill(self):
+        collection = self.root / "collection"
+        shutil.copytree(str(base.REPO_ROOT / "skills"), str(collection))
+        LifecycleTests.write_skill(collection / "solo-tool", "solo-tool", "first version")
+        gitly = self.run_installer(
+            "--group", "gitly", "--agent", "codex", "--skills-dir", str(collection), "--project", str(self.project),
+        )
+        self.assertEqual(gitly.returncode, 0, gitly.stderr)
+        before = tree(self.project)
+        self.assertEqual(self.add("--skill", "solo-tool", skills=collection).returncode, 0)
+        self.assertEqual(self.remove("solo-tool", skills=collection).returncode, 0)
+        self.assertEqual(tree(self.project), before)
+        removed = self.run_installer(
+            "--uninstall", "--group", "gitly", "--agent", "codex", "--skills-dir", str(collection),
+            "--project", str(self.project),
+        )
+        self.assertEqual(removed.returncode, 0, removed.stderr)
+        self.assertEqual(tree(self.project), {})
+        self.assertFalse(self.receipts.exists())
+
+    def test_edited_files_survive_removal_and_an_edited_router_is_kept(self):
+        self.assertEqual(self.add("--skill", "solo-tool").returncode, 0)
+        (self.dest / "solo-tool/SKILL.md").write_text("my edit\n")
+        (self.dest / "router/SKILL.md").write_text("my router edit\n")
+        result = self.remove("solo-tool")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("modified after installation", result.stdout)
+        self.assertEqual((self.dest / "solo-tool/SKILL.md").read_text(), "my edit\n")
+        self.assertEqual((self.dest / "router/SKILL.md").read_text(), "my router edit\n")
+
+    def test_unmodified_router_files_go_even_when_the_skill_was_edited(self):
+        self.assertEqual(self.add("--skill", "solo-tool").returncode, 0)
+        (self.dest / "solo-tool/SKILL.md").write_text("my edit\n")
+        self.assertEqual(self.remove("solo-tool").returncode, 0)
+        self.assertFalse((self.dest / "router").exists())
+        self.assertEqual((self.dest / "solo-tool/SKILL.md").read_text(), "my edit\n")
+
+    def test_the_dry_run_reports_the_router_and_changes_nothing(self):
+        self.assertEqual(self.add("--skill", "solo-tool").returncode, 0)
+        before = tree(self.project)
+        result = self.remove("solo-tool", "--dry-run")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("Would remove: .agents/skills/solo-tool/SKILL.md", result.stdout)
+        self.assertIn("Would remove: .agents/skills/router/SKILL.md", result.stdout)
+        self.assertEqual(tree(self.project), before)
+
+    def test_a_forged_receipt_for_a_standalone_skill_cannot_reach_files_outside(self):
+        victim = self.root / "victim.txt"
+        victim.write_text("precious\n")
+        digest = hashlib.sha256(victim.read_bytes()).hexdigest()
+        self.assertEqual(self.add("--skill", "solo-tool").returncode, 0)
+        receipt = self.receipts / "solo-tool.receipt"
+        receipt.write_text(receipt.read_text() + "{d}  ../../../../victim.txt\n{d}  {abs}\n{d}  router/../../../../victim.txt\n".format(d=digest, abs=victim))
+        result = self.remove("solo-tool")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(victim.read_text(), "precious\n")
+        self.assertFalse((self.dest / "solo-tool").exists())
+        self.assertFalse((self.dest / "router").exists())
+        self.assertIn("Removed 2 file(s)", result.stdout)
+        self.assertIn("Kept 3", result.stdout)
+
+    def test_a_symlinked_standalone_skill_directory_is_never_followed(self):
+        self.assertEqual(self.add("--skill", "solo-tool").returncode, 0)
+        decoy = self.root / "outside" / "solo-tool"
+        shutil.copytree(str(self.dest / "solo-tool"), str(decoy))
+        shutil.rmtree(str(self.dest / "solo-tool"))
+        os.symlink(str(decoy), str(self.dest / "solo-tool"))
+        result = self.remove("solo-tool")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertTrue((decoy / "SKILL.md").is_file(), "a file outside the project was deleted")
+        self.assertTrue((self.dest / "solo-tool").is_symlink())
+        self.assertIn("symbolic link", result.stdout)
+
+    def test_every_supported_agent_directory_is_cleaned_up(self):
+        for agent in base.AGENT_DIRS:
+            self.assertEqual(self.add("--skill", "solo-tool", agent=agent).returncode, 0, agent)
+        for agent, directory in base.AGENT_DIRS.items():
+            self.assertTrue((self.project / directory / "solo-tool/SKILL.md").is_file(), agent)
+            self.assertTrue((self.project / directory / "router/SKILL.md").is_file(), agent)
+        for agent in base.AGENT_DIRS:
+            result = self.remove("solo-tool", agent=agent)
+            self.assertEqual(result.returncode, 0, "{}: {}".format(agent, result.stderr))
+        self.assertEqual(tree(self.project), {})
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -200,14 +200,27 @@ def discover_packages(skills_dir):
     return packages
 
 
+def standalone_metadata(data):
+    """The optional package fields of a standalone skill, from 'metadata' in its frontmatter.
+    The validator checks them; maintainers are one comma-separated string there."""
+    raw = data.get("metadata") if isinstance(data.get("metadata"), dict) else {}
+    maintainers = raw.get("maintainers")
+    return {
+        "title": raw.get("title"),
+        "category": raw.get("category"),
+        "maintainers": maintainers.replace(",", " ").split() if isinstance(maintainers, str) else [],
+    }
+
+
 def describe_package(skills_dir, group, artifacts):
-    """One catalog entry. Everything is derived from the source tree except optional README metadata."""
+    """One catalog entry. Everything is derived from the source tree except optional metadata:
+    a group's README frontmatter, or a standalone skill's 'metadata'."""
     group_dir = skills_dir / group
     standalone = (group_dir / "SKILL.md").is_file()
     if standalone:
         data, _ = read_frontmatter(group_dir / "SKILL.md")
         description = " ".join(str(data.get("description", "")).split())
-        meta, body, readme = {}, description, None
+        meta, body, readme = standalone_metadata(data), description, None
         skills = [{"name": group, "description": description}]
     else:
         readme = group_dir / "README.md"

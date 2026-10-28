@@ -145,6 +145,24 @@ The website, the downloads, and the installer all read this information from the
 source, so there is nothing else to register. Add yourself under `maintainers` and
 to `.github/CODEOWNERS` if you want to review future changes to the package.
 
+### Describing a standalone skill
+
+A single skill added as `skills/<skill-name>/SKILL.md` is a package of one, so it has no
+`README.md` to describe it. It describes itself under `metadata` in its own frontmatter.
+Every field is optional:
+
+```yaml
+metadata:
+  category: Security            # same choices as above
+  maintainers: your-github-username, another-username
+  title: Secret Guard           # defaults to the skill name, title-cased
+```
+
+The summary is always the skill's `description`. `maintainers` is one comma-separated
+string, because Agent Skills metadata values are strings. Without a `category` the website
+lists the skill under Productivity; without `maintainers` it shows no maintainer links.
+Your existing `metadata` entries, such as `author` or `collection`, are unaffected.
+
 ### Adding a group (technical details)
 
 Create `skills/<group>/<skill-name>/SKILL.md` for each workflow. Each workflow
@@ -185,7 +203,7 @@ The file must start with `---` on the very first line.
 | `description` | Yes | 20–1024 characters. Say what the skill does **and** when an agent should use it. |
 | `license` | No | A license name such as `MIT`, or the name of a bundled license file. |
 | `compatibility` | No | Up to 500 characters. Environment requirements, for example `Requires git and the GitHub CLI (gh)`. |
-| `metadata` | No | A mapping for extra information such as `author` or `version`. |
+| `metadata` | No | A mapping for extra information such as `author` or `version`. A standalone skill can also set `category`, `maintainers`, and `title` here ([details](#describing-a-standalone-skill)). |
 | `allowed-tools` | No | Space-separated list of pre-approved tools. Experimental; support varies by agent. Avoid pre-approving shell access. |
 
 Agents may support additional fields (for example Claude Code's `disable-model-invocation`). The validator allows them, but every extra field makes a skill less portable, so use them only when necessary and explain why in your Pull Request.
@@ -322,7 +340,8 @@ The validator checks that:
 - the skill contains no symbolic links and has instructions after the frontmatter,
 - no file is larger than 1 MiB, binary files appear only under `assets/`, and text is UTF-8,
 - no file contains an obvious secret (private keys and common token formats),
-- the package `README.md` frontmatter, if present, uses only the documented fields.
+- the package `README.md` frontmatter, if present, uses only the documented fields,
+- a standalone skill's `metadata.category` is one of the listed categories and its `metadata.maintainers` are GitHub usernames.
 
 It also **warns** (without failing) about bundled `scripts/`, executable files, instructions that pipe a download into a shell, and skill names without the package prefix. Warnings tell the reviewer where to look closely.
 
