@@ -240,6 +240,105 @@ def check_frontmatter(skill_dir, skill_md, data, report):
     return name if isinstance(name, str) else None
 
 
+# Content safety limits. These catch honest mistakes and obvious problems. They do
+# not replace a maintainer reading what a skill tells an agent to do.
+FILE_SIZE_WARN = 256 * 1024
+FILE_SIZE_MAX = 1024 * 1024
+BINARY_ALLOWED_DIRS = {"assets"}
+SECRET_PATTERNS = [
+    (re.compile(r"-----BEGIN (?:[A-Z]+ )?PRIVATE KEY-----"), "a private key"),
+    (re.compile(r"\bAKIA[0-9A-Z]{16}\b"), "an AWS access key id"),
+    (re.compile(r"\bgh[pousr]_[A-Za-z0-9]{36,}\b"), "a GitHub token"),
+    (re.compile(r"\bgithub_pat_[A-Za-z0-9_]{22,}\b"), "a GitHub token"),
+    (re.compile(r"\bxox[abprs]-[A-Za-z0-9-]{10,}\b"), "a Slack token"),
+    (re.compile(r"\bsk-[A-Za-z0-9_-]{32,}\b"), "an API key"),
+    (re.compile(r"\bAIza[0-9A-Za-z_-]{35}\b"), "a Google API key"),
+]
+SUSPICIOUS_PATTERNS = [
+    (re.compile(r"\b(?:curl|wget)\b[^\n|]*\|\s*(?:sudo\s+)?(?:ba|z)?sh\b"), "pipes a download into a shell"),
+    (re.compile(r"\bbase64\s+(?:-d|--decode)\b[^\n]*\|\s*(?:ba)?sh\b"), "decodes content into a shell"),
+    (re.compile(r"\beval\s+\"?\$\("), "evaluates generated shell code"),
+    (re.compile(r"\brm\s+-[a-zA-Z]*r[a-zA-Z]*f[a-zA-Z]*\s+(?:/|~|\$HOME)(?:\s|$)"), "recursively removes a system or home directory"),
+]
+PACKAGE_METADATA_KEYS = {"title", "summary", "category", "maintainers"}
+MAINTAINER_PATTERN = re.compile(r"^[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})$")
+
+
+def check_content_safety(skill_dir, report):
+    """File size, file type, executable, secret, and suspicious-content checks for one skill."""
+    for path in sorted(skill_dir.rglob("*")):
+        if path.is_symlink() or not path.is_file():
+            continue
+        where = display_path(path)
+        relative = path.relative_to(skill_dir)
+        size = path.stat().st_size
+        if size > FILE_SIZE_MAX:
+            report.error(where, "file is {} KiB; the limit is {} KiB. Link to large files instead.".format(
+                size // 1024, FILE_SIZE_MAX // 1024))
+            continue
+        if size > FILE_SIZE_WARN:
+            report.warning(where, "file is {} KiB. Large files are loaded into the agent's context.".format(size // 1024))
+        with open(str(path), "rb") as handle:
+            head = handle.read(8192)
+        is_text = b"\0" not in head
+        top = relative.parts[0] if len(relative.parts) > 1 else ""
+        if not is_text and top not in BINARY_ALLOWED_DIRS:
+            report.error(where, "binary files are only allowed under assets/.")
+            continue
+        if path.stat().st_mode & 0o111 and top != "scripts":
+            report.warning(where, "file is executable outside scripts/. Remove the executable bit unless it is a script.")
+        if top == "scripts":
+            report.warning(where, "bundled script: maintainers must review what it does before merging.")
+        if not is_text:
+            continue
+        try:
+            content = path.read_text(encoding="utf-8")
+        except UnicodeDecodeError:
+            report.error(where, "text files must be UTF-8 encoded.")
+            continue
+        for pattern, label in SECRET_PATTERNS:
+            if pattern.search(content):
+                report.error(where, "looks like it contains {}. Remove it and rotate the credential.".format(label))
+                break
+        for pattern, label in SUSPICIOUS_PATTERNS:
+            if pattern.search(content):
+                report.warning(where, "{}. Maintainers must confirm this is intended and documented.".format(label))
+
+
+def check_package_metadata(group_dir, report):
+    """Validate the optional frontmatter of skills/<package>/README.md."""
+    readme = group_dir / "README.md"
+    if not readme.is_file() or readme.is_symlink():
+        return
+    where = display_path(readme)
+    try:
+        text = readme.read_text(encoding="utf-8")
+    except UnicodeDecodeError:
+        report.error(where, "README.md must be UTF-8 encoded text.")
+        return
+    if not text.startswith("---"):
+        return
+    try:
+        frontmatter, _ = split_frontmatter(text)
+        data = yaml.safe_load(frontmatter)
+    except (ValueError, yaml.YAMLError) as exc:
+        report.error(where, "package frontmatter is invalid: {}".format(str(exc).splitlines()[0]))
+        return
+    if not isinstance(data, dict):
+        report.error(where, "package frontmatter must be a mapping of 'key: value' pairs.")
+        return
+    for key in sorted(set(data) - PACKAGE_METADATA_KEYS):
+        report.error(where, "unknown package field '{}'. Allowed: {}.".format(key, ", ".join(sorted(PACKAGE_METADATA_KEYS))))
+    for key in ("title", "summary", "category"):
+        if key in data and (not isinstance(data[key], str) or not data[key].strip()):
+            report.error(where, "'{}' must be a non-empty string.".format(key))
+    maintainers = data.get("maintainers", [])
+    if not isinstance(maintainers, list) or not all(
+        isinstance(item, str) and MAINTAINER_PATTERN.fullmatch(item) for item in maintainers
+    ):
+        report.error(where, "'maintainers' must be a list of GitHub usernames, without '@'.")
+
+
 def validate_skill(skill_dir, report, group_dir=None):
     """Validate one skill directory. Returns its declared name, if any."""
     skill_md = skill_dir / "SKILL.md"
@@ -253,6 +352,7 @@ def validate_skill(skill_dir, report, group_dir=None):
         return None
 
     check_symlinks(skill_dir, report)
+    check_content_safety(skill_dir, report)
 
     try:
         text = skill_md.read_text(encoding="utf-8")
@@ -341,6 +441,7 @@ def validate_collection(skills_dir):
                 report.error(display_path(entry), "a skill group must contain at least one skill directory.")
             skill_dirs.extend(children)
             if entry.name != "_shared":
+                check_package_metadata(entry, report)
                 groups.update({child: entry for child in children})
                 if any(child.is_file() and not child.name.startswith(".") for child in entry.iterdir()):
                     resource_groups.add(entry.name)
@@ -356,6 +457,13 @@ def validate_collection(skills_dir):
         name = validate_skill(skill_dir, report, groups.get(skill_dir))
         if name is None:
             continue
+        group = groups.get(skill_dir)
+        if group is not None and not name.startswith(group.name + "-"):
+            report.warning(
+                display_path(skill_dir / "SKILL.md"),
+                "skill names in the '{0}' package should start with '{0}-'. Installation flattens "
+                "every package into one directory, so the prefix keeps names unique.".format(group.name),
+            )
         if name in resource_groups:
             report.error(display_path(skill_dir), "skill name '{}' conflicts with a group resources directory.".format(name))
         if name in seen:
