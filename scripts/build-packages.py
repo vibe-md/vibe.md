@@ -5,7 +5,7 @@
     python3 scripts/build-packages.py --group gitly --output-dir dist/downloads
     python3 scripts/build-packages.py --verify dist/downloads
 
-A package is any directory under skills/ that holds skills. Packages are
+A package is any directory under skills/ that holds skills; a standalone skill is a package of one. Packages are
 discovered from the source tree, so a new package needs no change here. The
 catalog (catalog.json) lists every package, its skills, and its archives with
 checksums, all for one source revision.
@@ -37,11 +37,16 @@ def build_packages(skills_dir, group, output_dir, ref):
     if not re.fullmatch(r"[a-z0-9]+(?:-[a-z0-9]+)*", group) or len(group) > 64:
         raise ValueError("group names must be lowercase kebab-case, up to 64 characters")
     group_dir = skills_dir / group
-    if not group_dir.is_dir() or (group_dir / "SKILL.md").exists():
-        raise ValueError("group not found: " + group)
-    sources = sorted(group_dir.glob("*/SKILL.md")) + sorted((skills_dir / "_shared").glob("*/SKILL.md"))
-    if not any(path.parent.parent == group_dir for path in sources):
-        raise ValueError("group contains no skills: " + group)
+    if not group_dir.is_dir():
+        raise ValueError("package not found: " + group)
+    # A standalone skill (skills/<name>/SKILL.md) is published as a package of one skill.
+    standalone = (group_dir / "SKILL.md").is_file()
+    if standalone:
+        sources = [group_dir / "SKILL.md"] + sorted((skills_dir / "_shared").glob("*/SKILL.md"))
+    else:
+        sources = sorted(group_dir.glob("*/SKILL.md")) + sorted((skills_dir / "_shared").glob("*/SKILL.md"))
+        if not any(path.parent.parent == group_dir for path in sources):
+            raise ValueError("group contains no skills: " + group)
     payload = {}
     modes = {}
     names = set()
@@ -65,8 +70,8 @@ def build_packages(skills_dir, group, output_dir, ref):
                 payload[name] = data
                 modes[name] = 0o755 if path.stat().st_mode & 0o111 else 0o644
 
-    resources = [path for path in sorted(group_dir.iterdir()) if not path.name.startswith(".")
-                 and (path.suffix == ".md" or path.name == "LICENSE")]
+    resources = [] if standalone else [path for path in sorted(group_dir.iterdir()) if not path.name.startswith(".")
+                                       and (path.suffix == ".md" or path.name == "LICENSE")]
     if resources and group in names:
         raise ValueError("group resources conflict with a skill of the same name: " + group)
     for path in resources:
@@ -84,7 +89,10 @@ def build_packages(skills_dir, group, output_dir, ref):
         "skills": sorted(names),
         "agents": {},
     }
+    resources_clause = "including the group resources directory `{destination}/" + group + "/` when present" if not standalone \
+        else "(this package has no group resources directory)"
     for agent, (label, destination) in AGENTS.items():
+        clause = resources_clause.replace("{destination}", destination)
         guide = f"""# Install {group} from vibe.md for {label}
 
 This package targets {label}. Stop if the currently open agent does not match.
@@ -95,7 +103,7 @@ The user's request to install this package authorizes copying missing files.
    exactly its listed skills and files, with matching SHA-256 hashes and no
    symbolic links. Required skills: {', '.join(sorted(names))}.
 2. Inspect ALL destination directories at `{destination}/<directory>/` first,
-   including the group resources directory `{destination}/{group}/` when present.
+   {clause}.
    Classify each complete directory as missing, byte-for-byte identical, or
    conflicting, including any extra destination files. If any directory conflicts,
    stop before writing anything and ask the user how to handle it. Preserve all
@@ -181,37 +189,43 @@ def first_paragraph(markdown):
     return " ".join(lines)
 
 
-def discover_groups(skills_dir):
-    """Package ids: every directory under skills/ that holds skills, except _shared."""
-    groups = []
+def discover_packages(skills_dir):
+    """Package ids: every group of skills under skills/, and every standalone skill (a package of one)."""
+    packages = []
     for entry in sorted(skills_dir.iterdir()):
         if entry.name.startswith(".") or entry.name == "_shared" or not entry.is_dir():
             continue
-        if (entry / "SKILL.md").exists():
-            continue  # a standalone skill, installed by name rather than published as a package
-        if any((child / "SKILL.md").is_file() for child in entry.iterdir() if child.is_dir()):
-            groups.append(entry.name)
-    return groups
+        if (entry / "SKILL.md").is_file() or any((child / "SKILL.md").is_file() for child in entry.iterdir() if child.is_dir()):
+            packages.append(entry.name)
+    return packages
 
 
 def describe_package(skills_dir, group, artifacts):
     """One catalog entry. Everything is derived from the source tree except optional README metadata."""
     group_dir = skills_dir / group
-    readme = group_dir / "README.md"
-    meta, body = read_frontmatter(readme) if readme.is_file() else ({}, "")
-    skills = []
-    for entry in sorted(group_dir.glob("*/SKILL.md")):
-        data, _ = read_frontmatter(entry)
-        skills.append({"name": entry.parent.name, "description": " ".join(str(data.get("description", "")).split())})
+    standalone = (group_dir / "SKILL.md").is_file()
+    if standalone:
+        data, _ = read_frontmatter(group_dir / "SKILL.md")
+        description = " ".join(str(data.get("description", "")).split())
+        meta, body, readme = {}, description, None
+        skills = [{"name": group, "description": description}]
+    else:
+        readme = group_dir / "README.md"
+        meta, body = read_frontmatter(readme) if readme.is_file() else ({}, "")
+        skills = []
+        for entry in sorted(group_dir.glob("*/SKILL.md")):
+            data, _ = read_frontmatter(entry)
+            skills.append({"name": entry.parent.name, "description": " ".join(str(data.get("description", "")).split())})
     shared = sorted(entry.parent.name for entry in (skills_dir / "_shared").glob("*/SKILL.md"))
     package = {
         "id": group,
         "title": meta.get("title") or group.replace("-", " ").title(),
-        "summary": meta.get("summary") or first_paragraph(body),
+        "summary": meta.get("summary") or (body if standalone else first_paragraph(body)),
         "maintainers": list(meta.get("maintainers") or []),
         "skills": skills,
         "shared_skills": shared,
-        "documentation": "skills/{}/README.md".format(group) if readme.is_file() else None,
+        "kind": "standalone" if standalone else "group",
+        "documentation": "skills/{}/SKILL.md".format(group) if standalone else ("skills/{}/README.md".format(group) if readme.is_file() else None),
         "artifacts": artifacts,
     }
     if meta.get("category"):
@@ -289,9 +303,19 @@ def verify_catalog(directory, skills_dir=None):
             if manifest["agents"].get(agent, {}).get("sha256") != artifact["sha256"]:
                 errors.append("{}: manifest and catalog disagree about {}".format(group, artifact["file"]))
         if skills_dir is not None:
-            source = sorted(path.parent.name for path in (Path(skills_dir) / group).glob("*/SKILL.md"))
+            if (Path(skills_dir) / group / "SKILL.md").is_file():
+                source = [group]
+            else:
+                source = sorted(path.parent.name for path in (Path(skills_dir) / group).glob("*/SKILL.md"))
             if source != listed:
                 errors.append("{}: catalog skills {} differ from the source {}".format(group, listed, source))
+    expected = {"catalog.json"}
+    for package in catalog.get("packages", []):
+        expected.add(package["id"] + "-manifest.json")
+        expected.update(artifact["file"] for artifact in package["artifacts"].values())
+    for entry in sorted(directory.iterdir()):
+        if entry.name not in expected:
+            errors.append("unlisted file in the output directory: {}".format(entry.name))
     return errors
 
 
@@ -317,7 +341,7 @@ def main():
     if not ref:
         ref = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
     try:
-        groups = discover_groups(args.skills_dir) if args.all else args.group
+        groups = discover_packages(args.skills_dir) if args.all else args.group
         if not groups:
             parser.error("no packages found in " + str(args.skills_dir))
         catalog = build_catalog(args.skills_dir, groups, args.output_dir, ref)

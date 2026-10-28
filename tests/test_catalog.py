@@ -105,9 +105,55 @@ class CatalogTests(unittest.TestCase):
         self.assertIn("security-install/skills/router/SKILL.md", names)
         self.assertFalse(any("alpha" in name for name in names))
 
-    def test_standalone_skills_are_not_published_as_packages(self):
+    # --- standalone skills are packages of one ------------------------------------
+
+    def test_a_standalone_skill_is_published_as_a_package_of_one(self):
+        write_skill(self.skills / "lonely", "lonely", "Does one thing for the user. Use it when testing standalone skills.")
+        self.assertEqual(builder.discover_packages(self.skills), ["alpha", "lonely"])
+        self.assertEqual(self.build("--all").returncode, 0)
+        lonely = self.package("lonely")
+        self.assertEqual(lonely["kind"], "standalone")
+        self.assertEqual(self.package("alpha")["kind"], "group")
+        self.assertEqual([s["name"] for s in lonely["skills"]], ["lonely"])
+        self.assertEqual(lonely["summary"], "Does one thing for the user. Use it when testing standalone skills.")
+        self.assertEqual(lonely["title"], "Lonely")
+        self.assertEqual(lonely["documentation"], "skills/lonely/SKILL.md")
+        self.assertEqual(sorted(lonely["artifacts"]), sorted(builder.AGENTS))
+        with zipfile.ZipFile(self.out / lonely["artifacts"]["codex"]["file"]) as archive:
+            names = archive.namelist()
+            guide = archive.read("lonely-install/INSTALL.md").decode()
+        self.assertIn("lonely-install/skills/lonely/SKILL.md", names)
+        self.assertIn("lonely-install/skills/router/SKILL.md", names)
+        self.assertFalse(any("alpha" in name for name in names))
+        self.assertIn("no group resources directory", guide)
+        self.assertEqual(self.build("--verify", str(self.out)).returncode, 0)
+
+    def test_a_standalone_package_installs_by_skill_name_next_to_a_group(self):
         write_skill(self.skills / "lonely", "lonely")
-        self.assertEqual(builder.discover_groups(self.skills), ["alpha"])
+        self.assertEqual(self.build("--all").returncode, 0)
+        project = self.root / "project"
+        project.mkdir()
+        for flag, name in (("--group", "alpha"), ("--skill", "lonely")):
+            result = subprocess.run(
+                ["bash", str(INSTALLER), flag, name, "--agent", "cursor", "--skills-dir", str(self.skills), "--project", str(project)],
+                capture_output=True, text=True)
+            self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual({p.name for p in (project / ".cursor/skills").iterdir()}, {"alpha", "alpha-save", "alpha-status", "lonely", "router"})
+        self.assertTrue((project / ".cursor/.vibe-md/lonely.receipt").is_file())
+
+    def test_group_archives_do_not_change_when_standalone_support_exists(self):
+        # The group "how to install" text and layout are what existing Gitly downloads contain.
+        self.assertEqual(self.build("--all").returncode, 0)
+        with zipfile.ZipFile(self.out / self.package("alpha")["artifacts"]["codex"]["file"]) as archive:
+            guide = archive.read("alpha-install/INSTALL.md").decode()
+        self.assertIn("including the group resources directory `.agents/skills/alpha/` when present", guide)
+
+    def test_unlisted_files_in_the_output_directory_are_detected(self):
+        self.assertEqual(self.build("--all").returncode, 0)
+        (self.out / "retired-codex.zip").write_bytes(b"old")
+        result = self.build("--verify", str(self.out))
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("unlisted file", result.stdout)
 
     # --- consistency ----------------------------------------------------------
 
