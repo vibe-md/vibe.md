@@ -22,7 +22,10 @@ class PackageTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             output = Path(temporary) / "downloads"
             manifest = builder.build_packages(ROOT / "skills", "gitly", output, "test-ref")
-            self.assertEqual(len(manifest["skills"]), 13)
+            # The count follows the source tree, so adding a Gitly skill never breaks this test.
+            source_skills = {p.parent.name for p in (ROOT / "skills/gitly").glob("*/SKILL.md")}
+            source_skills |= {p.parent.name for p in (ROOT / "skills/_shared").glob("*/SKILL.md")}
+            self.assertEqual(set(manifest["skills"]), source_skills)
             self.assertIn("vibe", manifest["skills"])
             for agent, (_, destination) in builder.AGENTS.items():
                 package = output / manifest["agents"][agent]["archive"]
@@ -53,7 +56,7 @@ class PackageTests(unittest.TestCase):
                         target = project / destination / relative
                         target.parent.mkdir(parents=True, exist_ok=True)
                         target.write_bytes(data)
-                    self.assertEqual(len(list((project / destination).glob("*/SKILL.md"))), 13)
+                    self.assertEqual(len(list((project / destination).glob("*/SKILL.md"))), len(manifest["skills"]))
                     self.assertEqual((project / destination / "gitly/GITLY.md").read_bytes(),
                                      (ROOT / "skills/gitly/GITLY.md").read_bytes())
                     self.assertEqual(len(list((project / destination).rglob("GITLY.md"))), 1)

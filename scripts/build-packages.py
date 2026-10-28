@@ -1,12 +1,25 @@
 #!/usr/bin/env python3
-"""Build reproducible, agent-guided ZIP downloads from a vibe.md skill group."""
+"""Build reproducible ZIP downloads and a catalog from vibe.md skill packages.
+
+    python3 scripts/build-packages.py --all --output-dir dist/downloads
+    python3 scripts/build-packages.py --group gitly --output-dir dist/downloads
+    python3 scripts/build-packages.py --verify dist/downloads
+
+A package is any directory under skills/ that holds skills. Packages are
+discovered from the source tree, so a new package needs no change here. The
+catalog (catalog.json) lists every package, its skills, and its archives with
+checksums, all for one source revision.
+"""
 
 import argparse
 import hashlib
 import json
+import os
 import re
+import shutil
 import stat
 import subprocess
+import tempfile
 import zipfile
 from pathlib import Path
 
@@ -128,21 +141,191 @@ their tools, execute their workflows, or change existing project preferences.
     return manifest
 
 
+def read_frontmatter(path):
+    """Return (mapping, body) for a Markdown file with optional YAML frontmatter."""
+    try:
+        import yaml
+    except ImportError:
+        raise ValueError("PyYAML is required: python3 -m pip install -r requirements-dev.txt")
+    text = Path(path).read_text(encoding="utf-8")
+    if not text.startswith("---"):
+        return {}, text
+    end = text.find("\n---", 3)
+    if end == -1:
+        return {}, text
+    try:
+        data = yaml.safe_load(text[3:end]) or {}
+    except yaml.YAMLError as error:
+        problem = getattr(error, "problem", None) or str(error).splitlines()[0]
+        raise ValueError("invalid YAML frontmatter in {}: {}".format(path, problem))
+    return (data if isinstance(data, dict) else {}), text[end + 4:]
+
+
+def first_paragraph(markdown):
+    """The first paragraph of prose, skipping headings, lists, and code."""
+    lines, in_code = [], False
+    for line in markdown.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("```"):
+            in_code = not in_code
+            continue
+        if in_code or stripped.startswith(("#", "-", "*", ">", "|", "<", "[!")):
+            if lines:
+                break
+            continue
+        if not stripped:
+            if lines:
+                break
+            continue
+        lines.append(stripped)
+    return " ".join(lines)
+
+
+def discover_groups(skills_dir):
+    """Package ids: every directory under skills/ that holds skills, except _shared."""
+    groups = []
+    for entry in sorted(skills_dir.iterdir()):
+        if entry.name.startswith(".") or entry.name == "_shared" or not entry.is_dir():
+            continue
+        if (entry / "SKILL.md").exists():
+            continue  # a standalone skill, installed by name rather than published as a package
+        if any((child / "SKILL.md").is_file() for child in entry.iterdir() if child.is_dir()):
+            groups.append(entry.name)
+    return groups
+
+
+def describe_package(skills_dir, group, artifacts):
+    """One catalog entry. Everything is derived from the source tree except optional README metadata."""
+    group_dir = skills_dir / group
+    readme = group_dir / "README.md"
+    meta, body = read_frontmatter(readme) if readme.is_file() else ({}, "")
+    skills = []
+    for entry in sorted(group_dir.glob("*/SKILL.md")):
+        data, _ = read_frontmatter(entry)
+        skills.append({"name": entry.parent.name, "description": " ".join(str(data.get("description", "")).split())})
+    shared = sorted(entry.parent.name for entry in (skills_dir / "_shared").glob("*/SKILL.md"))
+    package = {
+        "id": group,
+        "title": meta.get("title") or group.replace("-", " ").title(),
+        "summary": meta.get("summary") or first_paragraph(body),
+        "maintainers": list(meta.get("maintainers") or []),
+        "skills": skills,
+        "shared_skills": shared,
+        "documentation": "skills/{}/README.md".format(group) if readme.is_file() else None,
+        "artifacts": artifacts,
+    }
+    if meta.get("category"):
+        package["category"] = meta["category"]
+    return package
+
+
+def build_catalog(skills_dir, groups, output_dir, ref):
+    """Build every package and a catalog.json describing them, all or nothing.
+
+    Output is assembled in a temporary directory beside output_dir and moved
+    into place only after every package built, so a failure never leaves a
+    partial or inconsistent set of files behind.
+    """
+    output_dir.parent.mkdir(parents=True, exist_ok=True)
+    staging = Path(tempfile.mkdtemp(prefix=".catalog-", dir=str(output_dir.parent)))
+    try:
+        packages = []
+        for group in groups:
+            manifest = build_packages(skills_dir, group, staging, ref)
+            artifacts = {
+                agent: {"file": info["archive"], "sha256": info["sha256"]}
+                for agent, info in sorted(manifest["agents"].items())
+            }
+            packages.append(describe_package(skills_dir, group, artifacts))
+        catalog = {
+            "schema_version": 1,
+            "source_repository": "vibe-md/vibe.md",
+            "source_ref": ref,
+            "agents": {agent: {"name": label, "skills_dir": destination} for agent, (label, destination) in AGENTS.items()},
+            "packages": packages,
+        }
+        (staging / "catalog.json").write_text(json.dumps(catalog, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        errors = verify_catalog(staging, skills_dir)
+        if errors:
+            raise ValueError("catalog is inconsistent:\n  " + "\n  ".join(errors))
+        output_dir.mkdir(parents=True, exist_ok=True)
+        for item in sorted(staging.iterdir()):
+            os.replace(str(item), str(output_dir / item.name))
+        return catalog
+    finally:
+        shutil.rmtree(str(staging), ignore_errors=True)
+
+
+def verify_catalog(directory, skills_dir=None):
+    """Check that catalog.json, the manifests, and the archives describe the same files."""
+    directory = Path(directory)
+    errors = []
+    try:
+        catalog = json.loads((directory / "catalog.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError) as error:
+        return ["catalog.json could not be read: {}".format(error)]
+    if catalog.get("schema_version") != 1:
+        errors.append("unsupported catalog schema_version: {!r}".format(catalog.get("schema_version")))
+    for package in catalog.get("packages", []):
+        group = package["id"]
+        try:
+            manifest = json.loads((directory / (group + "-manifest.json")).read_text(encoding="utf-8"))
+        except (OSError, ValueError) as error:
+            errors.append("{}: manifest could not be read: {}".format(group, error))
+            continue
+        if manifest.get("source_ref") != catalog.get("source_ref"):
+            errors.append("{}: manifest and catalog disagree about the source revision".format(group))
+        listed = sorted(skill["name"] for skill in package["skills"])
+        if sorted(listed + list(package["shared_skills"])) != sorted(manifest["skills"]):
+            errors.append("{}: catalog skills do not match the manifest".format(group))
+        if sorted(package["artifacts"]) != sorted(manifest["agents"]):
+            errors.append("{}: catalog and manifest list different agents".format(group))
+        for agent, artifact in package["artifacts"].items():
+            archive = directory / artifact["file"]
+            if not archive.is_file():
+                errors.append("{}: missing archive {}".format(group, artifact["file"]))
+            elif hashlib.sha256(archive.read_bytes()).hexdigest() != artifact["sha256"]:
+                errors.append("{}: checksum mismatch for {}".format(group, artifact["file"]))
+            if manifest["agents"].get(agent, {}).get("sha256") != artifact["sha256"]:
+                errors.append("{}: manifest and catalog disagree about {}".format(group, artifact["file"]))
+        if skills_dir is not None:
+            source = sorted(path.parent.name for path in (Path(skills_dir) / group).glob("*/SKILL.md"))
+            if source != listed:
+                errors.append("{}: catalog skills {} differ from the source {}".format(group, listed, source))
+    return errors
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--group", required=True)
+    parser.add_argument("--group", action="append", help="package to build; repeat to build several")
+    parser.add_argument("--all", action="store_true", help="build every package found under skills/")
     parser.add_argument("--skills-dir", type=Path, default=ROOT / "skills")
     parser.add_argument("--output-dir", type=Path, default=ROOT / "dist/downloads")
     parser.add_argument("--ref", help="Published source commit used by terminal installation")
+    parser.add_argument("--verify", type=Path, metavar="DIR",
+                        help="check an existing output directory against its catalog and the source, then exit")
     args = parser.parse_args()
+    if args.verify:
+        errors = verify_catalog(args.verify, args.skills_dir)
+        for error in errors:
+            print("error: " + error)
+        print("Catalog verified." if not errors else "Catalog verification failed.")
+        raise SystemExit(1 if errors else 0)
+    if bool(args.group) == args.all:
+        parser.error("choose --group <name> (repeatable) or --all")
     ref = args.ref
     if not ref:
         ref = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
     try:
-        manifest = build_packages(args.skills_dir, args.group, args.output_dir, ref)
+        groups = discover_groups(args.skills_dir) if args.all else args.group
+        if not groups:
+            parser.error("no packages found in " + str(args.skills_dir))
+        catalog = build_catalog(args.skills_dir, groups, args.output_dir, ref)
     except ValueError as error:
         parser.error(str(error))
-    print("Built {} packages for {} skills in {}".format(len(AGENTS), len(manifest["skills"]), args.output_dir))
+    count = sum(len(package["skills"]) for package in catalog["packages"])
+    print("Built {} package(s) with {} skills for {} agents in {}".format(
+        len(catalog["packages"]), count, len(AGENTS), args.output_dir))
 
 
 if __name__ == "__main__":
