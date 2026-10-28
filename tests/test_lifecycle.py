@@ -7,6 +7,8 @@ an installation recorded are ever replaced or removed.
 Run with: python3 -m unittest discover -s tests -v
 """
 
+import hashlib
+import os
 import shutil
 import unittest
 from pathlib import Path
@@ -225,6 +227,82 @@ class LifecycleTests(base.InstallerTestCase):
         self.assertEqual(edited.read_text(), "my edit\n")
         self.assertTrue((self.dest / "router/SKILL.md").is_file())
         self.assertIn("shared skills are only removed with ownership records", result.stdout)
+
+    def test_uninstalling_one_skill_of_a_legacy_installation_keeps_the_shared_documents(self):
+        self.legacy_install()
+        shutil.copytree(str(self.skills / "alpha"), str(self.dest / "alpha"), ignore=shutil.ignore_patterns("alpha-*"))
+        result = self.run_installer(
+            "--uninstall", "--skill", "alpha-status", "--agent", "codex", "--skills-dir", str(self.skills),
+            "--project", str(self.project),
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertFalse((self.dest / "alpha-status").exists())
+        self.assertTrue((self.dest / "alpha/README.md").is_file(), "shared group documents were removed")
+        self.assertTrue((self.dest / "alpha-save/SKILL.md").is_file())
+        self.assertTrue((self.dest / "router/SKILL.md").is_file())
+        self.assertIn("shared with other workflows", result.stdout)
+
+    # --- adversarial uninstall --------------------------------------------------
+
+    def outside_copy(self, source):
+        """A decoy outside the project holding byte-identical copies of installed files."""
+        outside = self.root / "outside"
+        shutil.copytree(str(source), str(outside / source.name))
+        return outside / source.name
+
+    def test_a_symlinked_skill_directory_is_never_followed_by_uninstall(self):
+        self.assertEqual(self.package("alpha").returncode, 0)
+        decoy = self.outside_copy(self.dest / "alpha-save")
+        shutil.rmtree(str(self.dest / "alpha-save"))
+        os.symlink(str(decoy), str(self.dest / "alpha-save"))
+        result = self.uninstall("alpha")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertTrue((decoy / "SKILL.md").is_file(), "a file outside the project was deleted")
+        self.assertTrue((self.dest / "alpha-save").is_symlink())
+        self.assertIn("symbolic link", result.stdout)
+        self.assertFalse((self.dest / "alpha-status").exists())
+
+    def test_a_symlink_in_the_middle_of_a_path_is_never_followed_by_uninstall(self):
+        references = self.skills / "alpha" / "alpha-save" / "references"
+        references.mkdir()
+        (references / "guide.md").write_text("Guide.\n")
+        self.assertEqual(self.package("alpha").returncode, 0)
+        decoy = self.outside_copy(self.dest / "alpha-save" / "references")
+        shutil.rmtree(str(self.dest / "alpha-save" / "references"))
+        os.symlink(str(decoy), str(self.dest / "alpha-save" / "references"))
+        result = self.uninstall("alpha")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertTrue((decoy / "guide.md").is_file(), "a file outside the project was deleted")
+
+    def test_a_forged_receipt_cannot_reach_files_outside_the_skills_directory(self):
+        victim = self.root / "victim.txt"
+        victim.write_text("precious\n")
+        digest = hashlib.sha256(victim.read_bytes()).hexdigest()
+        mine = self.dest / "my-skill" / "notes.md"
+        mine.parent.mkdir(parents=True)
+        mine.write_text("mine\n")
+        own = hashlib.sha256(mine.read_bytes()).hexdigest()
+        self.receipts.mkdir(parents=True)
+        (self.receipts / "forged.receipt").write_text(
+            "# vibe.md install receipt v1\n"
+            "{d}  ../../../../victim.txt\n{d}  {abs}\n{d}  my-skill/../../../victim.txt\n"
+            "{d}  ./../../victim.txt\n{o}  my-skill/notes.md\n".format(d=digest, abs=victim, o=own)
+        )
+        result = self.uninstall("forged")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(victim.read_text(), "precious\n")
+        self.assertFalse(mine.exists())  # a genuine entry inside the skills directory is still honored
+        self.assertIn("Removed 1 file(s)", result.stdout)
+        self.assertIn("Kept 4", result.stdout)
+
+    def test_the_dry_run_counts_only_files_that_would_really_be_removed(self):
+        self.assertEqual(self.package("alpha").returncode, 0)
+        decoy = self.outside_copy(self.dest / "alpha-save")
+        shutil.rmtree(str(self.dest / "alpha-save"))
+        os.symlink(str(decoy), str(self.dest / "alpha-save"))
+        result = self.uninstall("alpha", "--dry-run")
+        self.assertNotIn("alpha-save/SKILL.md", [line.split(": ")[-1].replace(".agents/skills/", "") for line in result.stdout.splitlines() if "Would remove" in line])
+        self.assertTrue((decoy / "SKILL.md").is_file())
 
     # --- round trip -----------------------------------------------------------
 

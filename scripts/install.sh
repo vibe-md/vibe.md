@@ -514,7 +514,7 @@ write_receipt() {
   file="$RECEIPTS_DIR/$PACKAGE.receipt"
   tmp="$file.tmp.$$"
   for source in "${SELECTED[@]}"; do names="$names$(basename "$source") "; done
-  {
+  if ! {
     printf '# vibe.md install receipt v1\n# package: %s\n# agent: %s\n' "$PACKAGE" "$AGENT"
     {
       if [ -f "$file" ]; then
@@ -526,17 +526,42 @@ write_receipt() {
         dir_entries "$skills_root/$name" "$name"
       done
     } | LC_ALL=C sort -u
-  } > "$tmp" 2>/dev/null && mv "$tmp" "$file" 2>/dev/null ||
-    { rm -f "$tmp"; warn "could not record this installation in '$RECEIPTS_DIR'."; }
+  } > "$tmp" 2>/dev/null; then
+    rm -f "$tmp"
+    warn "could not record this installation in '$RECEIPTS_DIR'."
+    return 0
+  fi
+  mv "$tmp" "$file" 2>/dev/null || { rm -f "$tmp"; warn "could not record this installation in '$RECEIPTS_DIR'."; }
+}
+
+# True when a path recorded in a receipt could lead out of the skills directory: it is
+# absolute, has an empty, "." or ".." component, or passes through a symbolic link at any
+# level. Such paths are never read, hashed, or removed.
+path_escapes_root() {
+  local root="$1" rest="$2" part current="$1"
+  case "$rest" in
+    /*) return 0 ;;
+  esac
+  while [ -n "$rest" ]; do
+    part="${rest%%/*}"
+    case "$rest" in
+      */*) rest="${rest#*/}" ;;
+      *) rest="" ;;
+    esac
+    case "$part" in
+      "" | . | ..) return 0 ;;
+    esac
+    current="$current/$part"
+    if [ -L "$current" ]; then return 0; fi
+  done
+  return 1
 }
 
 # Remove one regular file below the skills directory. Refuses anything else.
 remove_owned_file() {
   local root="${1:?}" path="${2:?}"
-  case "$path" in
-    /* | *..*) return 1 ;;
-  esac
-  [ -f "$root/$path" ] && [ ! -L "$root/$path" ] || return 1
+  if path_escapes_root "$root" "$path"; then return 1; fi
+  [ -f "$root/$path" ] || return 1
   rm -f -- "${root:?}/${path:?}"
 }
 
@@ -603,8 +628,8 @@ uninstall_package() {
       continue
     fi
     f="$skills_root/$path"
-    if [ -L "$f" ]; then
-      echo "Keeping '$rel/$path': it is a symbolic link now."
+    if path_escapes_root "$skills_root" "$path"; then
+      echo "Keeping '$rel/$path': it is not a plain file inside the skills directory (a symbolic link or an unsafe path)."
       kept=$((kept + 1))
     elif [ ! -e "$f" ]; then
       :
@@ -669,6 +694,15 @@ uninstall_without_receipt() {
   for source in "${SELECTED[@]}"; do
     name="$(basename "$source")"
     dest="$skills_root/$name"
+    # Removing one skill must leave the package's shared documents (and shared skills)
+    # in place: the other installed skills link to them.
+    if [ -n "$SKILL" ] && [ "$name" != "$SKILL" ]; then
+      if [ -e "$dest" ] || [ -L "$dest" ]; then
+        echo "Keeping '$rel/$name': it is shared with other workflows."
+        kept=$((kept + 1))
+      fi
+      continue
+    fi
     if [ -e "$dest" ] || [ -L "$dest" ]; then
       if [ -d "$dest" ] && [ ! -L "$dest" ] && diff -r -q "$source" "$dest" >/dev/null 2>&1; then
         # Shared skills may belong to other packages, and there is no record of that.
@@ -726,7 +760,8 @@ install_skills() {
       else
         die "'$dest' already exists and differs from the vibe.md version of '$name'." \
           "Nothing was changed. Re-run with --force to replace it, or move it away first." \
-          "(A copy this installer installed and you have not edited is updated without --force.)"
+          "(A copy this installer installed and you have not edited is updated without --force." \
+          " An installation made before the installer kept records needs --force once; copy any edits first.)"
       fi
     fi
     actions+=("$action")
