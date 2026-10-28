@@ -613,7 +613,8 @@ uninstall_package() {
     # A directory another package also installed (for example the shared router) stays.
     other=""
     for f in "$RECEIPTS_DIR"/*.receipt; do
-      [ -f "$f" ] && [ "$f" != "$target" ] || continue
+      [ -f "$f" ] || continue
+      [ "$f" != "$target" ] || continue
       if [ -n "$(receipt_lines_for "$top" < "$f")" ]; then
         other="$(basename "$f" .receipt)"
         break

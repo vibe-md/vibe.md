@@ -92,6 +92,12 @@ class ValidationWorkflowTests(unittest.TestCase):
             self.assertNotIn("permissions", job)
         self.assertNotIn("secrets.", (WORKFLOWS / "validate-skills.yml").read_text())
 
+    def test_the_workflow_linter_is_a_pinned_release_checked_against_its_sha256(self):
+        step = next(s for s in self.workflow["jobs"]["test"]["steps"] if s.get("name") == "Lint workflows with actionlint")
+        self.assertRegex(step["env"]["ACTIONLINT_VERSION"], r"^\d+\.\d+\.\d+$")
+        self.assertRegex(step["env"]["ACTIONLINT_SHA256"], r"^[0-9a-f]{64}$")
+        self.assertIn("sha256sum --check", step["run"])
+
 
 if __name__ == "__main__":
     unittest.main()
