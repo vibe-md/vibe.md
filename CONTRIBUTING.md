@@ -160,8 +160,18 @@ metadata:
 
 The summary is always the skill's `description`. `maintainers` is one comma-separated
 string, because Agent Skills metadata values are strings. Without a `category` the website
-lists the skill under Productivity; without `maintainers` it shows no maintainer links.
+lists the skill under Other; without `maintainers` it shows no maintainer links.
 Your existing `metadata` entries, such as `author` or `collection`, are unaffected.
+
+The catalog suggests up to three categories from the description using conservative
+keyword rules. An unclear description remains uncategorised and appears under
+Other on the website. To override the suggestions, set `metadata.categories` to a
+comma-separated string, for example `Database, Security, Backend`. The first is
+the primary category. A group can set the same `categories` string in its README
+frontmatter. Existing `category` values are still supported; `categories` takes
+precedence if both fields are present. Suggestions are not semantic guarantees;
+review them and use the explicit override if they are inaccurate.
+
 
 ### Adding a group (technical details)
 

@@ -272,10 +272,8 @@ SUSPICIOUS_PATTERNS = [
     (re.compile(r"\beval\s+\"?\$\("), "evaluates generated shell code"),
     (re.compile(r"\brm\s+-[a-zA-Z]*r[a-zA-Z]*f[a-zA-Z]*\s+(?:/|~|\$HOME)(?:\s|$)"), "recursively removes a system or home directory"),
 ]
-PACKAGE_METADATA_KEYS = {"title", "summary", "category", "maintainers"}
-# The categories the website lists; any other value is shown under Productivity there.
-# Keep in sync with SKILL_CATEGORIES in the website (src/types/skill.ts).
-CATEGORIES = ("Version Control", "Testing", "Debugging", "Deployment", "Documentation", "Security", "Productivity")
+PACKAGE_METADATA_KEYS = {"title", "summary", "category", "categories", "maintainers"}
+from categories import CATEGORIES
 # Keep package text short enough to fit a catalog card; the website enforces looser limits as a backstop.
 PACKAGE_TEXT_LIMITS = {"title": 80, "summary": 400, "category": 40}
 MAX_MAINTAINERS = 10
@@ -374,6 +372,7 @@ def check_package_metadata(group_dir, report):
     for key in sorted(set(data) - PACKAGE_METADATA_KEYS):
         report.error(where, "unknown package field '{}'. Allowed: {}.".format(key, ", ".join(sorted(PACKAGE_METADATA_KEYS))))
     check_package_text(where, data, PACKAGE_TEXT_LIMITS, report)
+    check_categories(where, data, report)
     check_maintainers(where, data.get("maintainers", []), "'maintainers'", "a list of GitHub usernames", report)
 
 
@@ -400,6 +399,18 @@ def check_maintainers(where, maintainers, name, shape, report):
         report.error(where, "{} lists {} people; the maximum is {}.".format(name, len(maintainers), MAX_MAINTAINERS))
 
 
+def check_categories(where, data, report):
+    if "categories" not in data:
+        return
+    value = data["categories"]
+    if not isinstance(value, str):
+        report.error(where, "'categories' must be a comma-separated string.")
+        return
+    items = [item.strip() for item in value.split(",")]
+    if not 1 <= len(items) <= 3 or len(set(items)) != len(items) or any(item not in CATEGORIES for item in items):
+        report.error(where, "'categories' must contain one to three distinct categories from: {}.".format(", ".join(CATEGORIES)))
+
+
 def check_standalone_metadata(skill_md, data, report):
     """A standalone skill is a package of one. It describes itself under 'metadata' in its
     own frontmatter, using the same fields as a package README (all optional):
@@ -415,6 +426,7 @@ def check_standalone_metadata(skill_md, data, report):
         return
     where = display_path(skill_md)
     check_package_text(where, metadata, ("title", "category"), report, prefix="metadata.")
+    check_categories(where, metadata, report)
     category = metadata.get("category")
     if isinstance(category, str) and category.strip() and category not in CATEGORIES:
         report.error(where, "'metadata.category' is '{}'. Use one of: {}.".format(category, ", ".join(CATEGORIES)))
