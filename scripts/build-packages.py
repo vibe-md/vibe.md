@@ -22,6 +22,9 @@ import subprocess
 import tempfile
 import zipfile
 from pathlib import Path
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from categories import infer_categories
 
 ROOT = Path(__file__).resolve().parent.parent
 AGENTS = {
@@ -212,6 +215,7 @@ def standalone_metadata(data):
     return {
         "title": raw.get("title"),
         "category": raw.get("category"),
+        "categories": raw.get("categories"),
         "maintainers": maintainers.replace(",", " ").split() if isinstance(maintainers, str) else [],
     }
 
@@ -247,6 +251,13 @@ def describe_package(skills_dir, group, artifacts):
     }
     if meta.get("category"):
         package["category"] = meta["category"]
+    explicit = meta.get("categories")
+    if explicit:
+        package["categories"] = [value.strip() for value in explicit.split(",")]
+    elif meta.get("category"):
+        package["categories"] = [meta["category"]]
+    else:
+        package["categories"] = infer_categories(package["summary"])
     return package
 
 
