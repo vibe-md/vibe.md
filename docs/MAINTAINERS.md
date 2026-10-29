@@ -92,8 +92,19 @@ In **Settings → Actions → General**:
 | --- | --- | --- |
 | Fork pull request workflows | approval for first-time contributors | **approval for all outside collaborators** |
 | Workflow permissions | read repository contents | keep read-only |
-| Allow Actions to create and approve pull requests | off | keep off |
+| Allow Actions to create and approve pull requests | off | required for the automated skills README PR |
 | Require actions to be pinned to a full commit SHA | off | **on** (the workflows already pin every action) |
+
+The skills README workflow needs **Allow GitHub Actions to create and approve
+pull requests** enabled at both organization and repository level. GitHub uses
+one setting for both abilities; enabling it also permits appropriately scoped
+workflows to approve PRs. The README workflow itself only creates or updates a
+PR, uses a dedicated automation branch, and never approves or merges it. The
+default token permissions remain read-only; write permissions are limited to
+its trusted-main job. A GitHub-token-created PR may require a maintainer to
+approve its CI run before merging. After enabling the setting and merging the
+workflow, use **Actions → Update skills README → Run workflow** to verify setup;
+a PR is created only when the index differs from main.
 
 Never switch the validation workflow to `pull_request_target`, and do not add a
 step that runs code from a Pull Request with a token or secret in the environment.
