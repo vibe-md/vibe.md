@@ -23,6 +23,10 @@
     {"id": "negative-explain", "prompt": "Explain what a closure is in JavaScript.", "language": "en", "kind": "negative", "expected": []},
     {"id": "negative-settings-word", "prompt": "Add a dark mode switch to the app's settings page.", "language": "en", "kind": "negative", "expected": [], "notes": "Shares the word 'settings' with gitly-settings but is ordinary feature work."},
     {"id": "negative-branch-word", "prompt": "Add a 'branch' field to the store locator form.", "language": "en", "kind": "negative", "expected": [], "notes": "Shares the word 'branch' with gitly-branches but is ordinary feature work."},
-    {"id": "negative-translate", "prompt": "Translate this paragraph to French.", "language": "en", "kind": "negative", "expected": []}
+    {"id": "negative-translate", "prompt": "Translate this paragraph to French.", "language": "en", "kind": "negative", "expected": []},
+    {"id": "code-hygiene-phantom-error", "prompt": "I'm getting \"useHistory is not exported from react-router-dom\" after your change.", "language": "en", "kind": "positive", "expected": ["code-hygiene"], "notes": "Phantom API error message."},
+    {"id": "code-hygiene-cleanup", "prompt": "We switched to FlashList, clean up whatever the old carousel left behind.", "language": "en", "kind": "positive", "expected": ["code-hygiene"], "notes": "Dead code left by an abandoned approach."},
+    {"id": "code-hygiene-duplicates-he", "prompt": "תבדוק שאין לנו כבר פונקציה שעושה את זה לפני שאתה כותב חדשה", "language": "he", "kind": "positive", "expected": ["code-hygiene"], "notes": "Hebrew: check whether a function for this already exists before writing a new one."},
+    {"id": "negative-cleaner-ui", "prompt": "Make the login screen look cleaner with more spacing.", "language": "en", "kind": "negative", "expected": [], "notes": "Shares the word 'clean' with code-hygiene but is ordinary UI work."}
   ]
 }
