@@ -6,6 +6,7 @@ description: >
 license: MIT
 metadata:
   author: vibe-md
+  categories: Testing
   version: "1.0"
 ---
 

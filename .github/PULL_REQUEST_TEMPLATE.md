@@ -17,7 +17,7 @@
 
 - [ ] `SKILL.md` has valid YAML frontmatter with `name` and `description`.
 - [ ] The skill name is unique, lowercase kebab-case, matches its directory name, and starts with its package name (for example `security-audit`).
-- [ ] New package: `skills/<package>/README.md` explains the package (optional frontmatter: title, summary, category, maintainers).
+- [ ] New package: `skills/<package>/README.md` explains the package (frontmatter: `categories` is required; title, summary and maintainers are optional).
 - [ ] The description says what the skill does **and** when an agent should use it.
 - [ ] Resources live inside each skill or as top-level group Markdown documents/`LICENSE`; relative links resolve after installation.
 - [ ] Prerequisites (tools, accounts, network access) are documented in `SKILL.md`.
