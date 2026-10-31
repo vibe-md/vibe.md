@@ -60,9 +60,11 @@ Git and GitHub workflows for people who build with AI agents: save, compare, res
 
 ### Standalone skills
 
+- [git-conflict-resolver](git-conflict-resolver/SKILL.md) — Helps developers understand, investigate, and safely resolve Git merge conflicts, rebase conflicts, cherry-pick conflicts, and competing changes across branches. Use when Git reports merge conflicts or when a developer needs help reconciling conflicting file changes.
 - [readability](readability/SKILL.md) — Improves the readability, formatting, and structure of text, documentation, and markdown files. Use when the user asks to clean up text, improve clarity, or structure documentation.
 - [safe-migrations](safe-migrations/SKILL.md) — Plans and reviews database schema changes so they are reversible, verified, and never silently destructive. Use when the user asks to add, change, or remove tables or columns, when a migration fails partway, or before running pending migrations in a production or shared environment.
 - [secret-guard](secret-guard/SKILL.md) — Keeps credentials out of the repository by checking configuration files and staged changes for secrets before they are saved or pushed. Use when a project starts using API keys, tokens, or service credentials, before the first commit, and whenever configuration or authentication files change.
+- [test-first-react](test-first-react/SKILL.md) — Enforces Test-First (TDD) workflow for React components using React Testing Library. Use when building or changing React UI, components, forms, or pages. Always write tests before implementation code. When tests fail, stop and discuss with the user whether to fix the code or update the tests.
 
 <!-- skills-index:end -->
 
