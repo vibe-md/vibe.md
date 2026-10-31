@@ -2,6 +2,8 @@
 name: test-first-react
 description: Enforces Test-First (TDD) workflow for React components using React Testing Library. Use when building or changing React UI, components, forms, or pages. Always write tests before implementation code. When tests fail, stop and discuss with the user whether to fix the code or update the tests.
 author: Roee Angel
+metadata:
+  categories: Testing
 ---
 
 # Test-First React

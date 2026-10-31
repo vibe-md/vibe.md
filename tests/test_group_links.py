@@ -18,6 +18,7 @@ class GroupLinkTests(unittest.TestCase):
             skill = skills / 'docs' / 'docs-demo'
             skill.mkdir(parents=True)
             (skill.parent / 'CONTRACT.md').write_text('Shared rules.\n')
+            (skill.parent / 'README.md').write_text('---\ncategories: Testing\n---\n')
             project = root / 'project'
             project.mkdir()
             source = ('---\nname: docs-demo\ndescription: Demonstrates shared documentation links.\n---\n'

@@ -34,7 +34,7 @@ class CategoryTests(unittest.TestCase):
             skill = skills / 'demo'
             skill.mkdir()
             path = skill / 'SKILL.md'
-            for value, expected in [('Database, Security', 0), ('Database, Imaginary', 1), ('Database, Database', 1), ('Database, Security, Backend, DevOps', 1)]:
+            for value, expected in [('Database, Security', 0), ('Database, Imaginary', 1), ('Database, Database', 1), ('Database, Security, Backend, DevOps', 1), ('', 1)]:
                 with self.subTest(value=value):
                     path.write_text(f'---\nname: demo\ndescription: Checks documentation for errors and clarity.\nmetadata:\n  categories: {value}\n---\n\nInstructions.\n')
                     result = subprocess.run([sys.executable, str(ROOT / 'scripts/validate-skills.py'), '--skills-dir', str(skills)], capture_output=True, text=True)

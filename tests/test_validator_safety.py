@@ -22,6 +22,7 @@ class SafetyTests(unittest.TestCase):
         self.skills = self.root / "skills"
         self.skill = self.skills / "demo" / "demo-audit"
         self.skill.mkdir(parents=True)
+        (self.skills / "demo" / "README.md").write_text("---\ncategories: Testing\n---\n\n# Demo\n")
         self.write_skill("Checks a project for common problems. Use when the user asks for a demo audit.")
 
     def tearDown(self):
@@ -111,7 +112,7 @@ class SafetyTests(unittest.TestCase):
         (self.skills / "demo" / "README.md").write_text("---\n{}\n---\n\n# Demo\n".format(frontmatter))
 
     def test_valid_package_metadata_passes(self):
-        self.write_readme("title: Demo\nsummary: Checks things.\ncategory: Testing\nmaintainers: [octocat]")
+        self.write_readme("title: Demo\nsummary: Checks things.\ncategories: Testing\nmaintainers: [octocat]")
         self.assertEqual(self.validate().returncode, 0)
 
     def test_unknown_package_fields_are_rejected(self):
@@ -153,7 +154,7 @@ class SafetyTests(unittest.TestCase):
 
     def test_ordinary_package_documents_with_code_and_links_pass(self):
         (self.skills / "demo" / "README.md").write_text(
-            "# Demo\n\nRun `curl -fsSL https://example.com/x -o x.sh` and read it first.\n\n```bash\nrm -rf ./build\n```\n")
+            "---\ncategories: Testing\n---\n\n# Demo\n\nRun `curl -fsSL https://example.com/x -o x.sh` and read it first.\n\n```bash\nrm -rf ./build\n```\n")
         result = self.validate()
         self.assertEqual(result.returncode, 0, result.stdout)
         self.assertNotIn("warning:", result.stdout)
@@ -173,7 +174,7 @@ class SafetyTests(unittest.TestCase):
         self.assertEqual(self.validate().returncode, 1)
 
     def test_markup_in_package_text_is_allowed_because_the_website_escapes_it(self):
-        self.write_readme('title: "Use <b>bold</b> sparingly"\nsummary: "Handles </script> and & safely."')
+        self.write_readme('title: "Use <b>bold</b> sparingly"\nsummary: "Handles </script> and & safely."\ncategories: Testing')
         self.assertEqual(self.validate().returncode, 0)
 
     def test_too_many_maintainers_are_rejected(self):
@@ -186,16 +187,26 @@ class SafetyTests(unittest.TestCase):
         solo = self.skills / "solo-skill"
         solo.mkdir()
         (solo / "SKILL.md").write_text(
-            "---\nname: solo-skill\ndescription: A standalone skill that is published as a package of one skill.\n---\n\nBody.\n")
+            "---\nname: solo-skill\ndescription: A standalone skill that is published as a package of one skill.\nmetadata:\n  categories: Testing\n---\n\nBody.\n")
         result = self.validate()
         self.assertEqual(result.returncode, 0, result.stdout)
         self.assertNotIn("should start with", result.stdout)
         (solo / "notes.md").write_text("ghp_" + "b" * 36)
         self.assertEqual(self.validate().returncode, 1)
 
-    def test_a_package_readme_without_frontmatter_is_fine(self):
+    def test_a_package_readme_must_choose_categories(self):
         (self.skills / "demo" / "README.md").write_text("# Demo\n\nJust documentation.\n")
-        self.assertEqual(self.validate().returncode, 0)
+        result = self.validate()
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("needs frontmatter that sets 'categories'", result.stdout)
+        (self.skills / "demo" / "README.md").write_text("---\ntitle: Demo\n---\n\n# Demo\n")
+        result = self.validate()
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("'categories' is required", result.stdout)
+        (self.skills / "demo" / "README.md").unlink()
+        result = self.validate()
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("a skill group needs a README.md", result.stdout)
 
 
 class StandaloneMetadataTests(unittest.TestCase):
@@ -212,7 +223,9 @@ class StandaloneMetadataTests(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(str(self.root))
 
-    def write(self, metadata=""):
+    def write(self, metadata="", categories=True):
+        if categories and "categories" not in metadata:
+            metadata = "  categories: Testing\n" + metadata if metadata else "  categories: Testing"
         block = "metadata:\n{}\n".format(metadata) if metadata else ""
         (self.solo / "SKILL.md").write_text(
             "---\nname: solo-skill\ndescription: A standalone skill that is published as a package of one skill.\n"
@@ -224,7 +237,17 @@ class StandaloneMetadataTests(unittest.TestCase):
         self.assertEqual(result.returncode, 1, result.stdout)
         self.assertIn(message, result.stdout)
 
-    def test_a_skill_without_package_metadata_is_still_valid(self):
+    def test_a_skill_without_a_metadata_block_or_categories_is_rejected(self):
+        self.write(categories=False)
+        result = self.validate()
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("add a 'metadata' block with 'categories'", result.stdout)
+        self.write("  author: octocat", categories=False)
+        result = self.validate()
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("'categories' is required", result.stdout)
+
+    def test_a_skill_with_categories_only_is_valid(self):
         self.write()
         result = self.validate()
         self.assertEqual(result.returncode, 0, result.stdout)
@@ -243,6 +266,9 @@ class StandaloneMetadataTests(unittest.TestCase):
     def test_every_supported_category_is_accepted(self):
         for category in ("Version Control", "Testing", "Debugging", "Deployment", "Documentation", "Security", "Productivity"):
             self.write("  category: {}".format(category))
+            self.assertEqual(self.validate().returncode, 0, category)
+        for category in ("Database", "Frontend", "Backend", "DevOps", "Performance", "Accessibility", "Monitoring", "AI / Agents"):
+            self.write("  categories: {}".format(category), categories=False)
             self.assertEqual(self.validate().returncode, 0, category)
 
     def test_an_unknown_category_is_rejected_with_the_allowed_list(self):
@@ -277,6 +303,7 @@ class StandaloneMetadataTests(unittest.TestCase):
         # Only a standalone skill describes its own package; a group skill's frontmatter is unchanged.
         group = self.skills / "demo" / "demo-audit"
         group.mkdir(parents=True)
+        (group.parent / "README.md").write_text("---\ncategories: Testing\n---\n")
         (group / "SKILL.md").write_text(
             "---\nname: demo-audit\ndescription: Checks a project for common problems. Use when asked for a demo audit.\n"
             "metadata:\n  category: Not A Category\n  maintainers: ['@bad handle']\n---\n\nBody.\n")

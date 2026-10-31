@@ -25,7 +25,7 @@ INSTALLER = ROOT / "scripts/install.sh"
 
 def write_skill(path, name, description="A skill used to test catalog generation. Use it when testing."):
     path.mkdir(parents=True, exist_ok=True)
-    (path / "SKILL.md").write_text("---\nname: {}\ndescription: {}\n---\n\nInstructions.\n".format(name, description))
+    (path / "SKILL.md").write_text("---\nname: {}\ndescription: {}\nmetadata:\n  categories: Testing\n---\n\nInstructions.\n".format(name, description))
 
 
 class CatalogTests(unittest.TestCase):
@@ -36,7 +36,7 @@ class CatalogTests(unittest.TestCase):
         write_skill(self.skills / "_shared" / "router", "router")
         (self.skills / "alpha").mkdir(parents=True)
         (self.skills / "alpha" / "README.md").write_text(
-            "---\ntitle: Alpha Tools\nsummary: Everything for the alpha domain.\ncategory: Testing\n"
+            "---\ntitle: Alpha Tools\nsummary: Everything for the alpha domain.\ncategories: Testing\n"
             "maintainers: [octocat]\n---\n\n# Alpha\n\nIgnored because a summary is set.\n")
         write_skill(self.skills / "alpha" / "alpha-save", "alpha-save")
         write_skill(self.skills / "alpha" / "alpha-status", "alpha-status")
@@ -68,14 +68,14 @@ class CatalogTests(unittest.TestCase):
         alpha = self.package("alpha")
         self.assertEqual(alpha["title"], "Alpha Tools")
         self.assertEqual(alpha["summary"], "Everything for the alpha domain.")
-        self.assertEqual(alpha["category"], "Testing")
+        self.assertEqual(alpha["categories"], ["Testing"])
         self.assertEqual(alpha["maintainers"], ["octocat"])
         self.assertEqual([s["name"] for s in alpha["skills"]], ["alpha-save", "alpha-status"])
         self.assertEqual(alpha["shared_skills"], ["router"])
         self.assertEqual(sorted(alpha["artifacts"]), sorted(builder.AGENTS))
 
     def test_metadata_falls_back_to_the_directory_and_readme(self):
-        (self.skills / "alpha" / "README.md").write_text("# Alpha\n\nA plain README paragraph.\n\n## More\n")
+        (self.skills / "alpha" / "README.md").write_text("---\ncategories: Testing\n---\n\n# Alpha\n\nA plain README paragraph.\n\n## More\n")
         self.assertEqual(self.build("--all").returncode, 0)
         alpha = self.package("alpha")
         self.assertEqual(alpha["title"], "Alpha")
@@ -92,7 +92,7 @@ class CatalogTests(unittest.TestCase):
 
     def test_adding_a_new_package_needs_no_code_change(self):
         (self.skills / "security").mkdir()
-        (self.skills / "security" / "README.md").write_text("# Security\n\nAudit and harden a project.\n")
+        (self.skills / "security" / "README.md").write_text("---\ncategories: Security\n---\n\n# Security\n\nAudit and harden a project.\n")
         for name in ("security-audit", "security-secrets", "security-dependencies"):
             write_skill(self.skills / "security" / name, name)
         self.assertEqual(self.build("--all").returncode, 0)
@@ -274,7 +274,7 @@ class CatalogTests(unittest.TestCase):
 
     def test_packages_from_the_catalog_install_side_by_side(self):
         (self.skills / "security").mkdir()
-        (self.skills / "security" / "README.md").write_text("# Security\n\nAudit a project.\n")
+        (self.skills / "security" / "README.md").write_text("---\ncategories: Security\n---\n\n# Security\n\nAudit a project.\n")
         write_skill(self.skills / "security" / "security-audit", "security-audit")
         self.assertEqual(self.build("--all").returncode, 0)
         project = self.root / "project"

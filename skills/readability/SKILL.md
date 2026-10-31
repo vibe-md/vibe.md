@@ -1,6 +1,8 @@
 ---
 name: readability
 description: Improves the readability, formatting, and structure of text, documentation, and markdown files. Use when the user asks to clean up text, improve clarity, or structure documentation.
+metadata:
+  categories: Documentation
 ---
 
 # Readability

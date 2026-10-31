@@ -128,15 +128,15 @@ skills/security/
 └── security-audit/SKILL.md    # at least one skill
 ```
 
-`README.md` may start with this frontmatter. Every field is optional, and anything
-omitted is derived (the title from the directory name, the summary from the first
-paragraph, the skills from the directory):
+`README.md` must start with this frontmatter. `categories` is required; every other field is
+optional, and anything omitted is derived (the title from the directory name, the summary
+from the first paragraph, the skills from the directory):
 
 ```yaml
 ---
 title: Security
 summary: One sentence that says what the package helps with.
-category: Security          # Version Control, Testing, Debugging, Deployment, Documentation, Security, or Productivity
+categories: Security, Backend   # required: one to three, comma-separated; the first is the main one (see the list below)
 maintainers: [your-github-username]
 ---
 ```
@@ -149,28 +149,26 @@ to `.github/CODEOWNERS` if you want to review future changes to the package.
 
 A single skill added as `skills/<skill-name>/SKILL.md` is a package of one, so it has no
 `README.md` to describe it. It describes itself under `metadata` in its own frontmatter.
-Every field is optional:
+`categories` is required; the other fields are optional:
 
 ```yaml
 metadata:
-  category: Security            # same choices as above
+  categories: Security, Backend   # required: one to three, same choices as above
   maintainers: your-github-username, another-username
   title: Secret Guard           # defaults to the skill name, title-cased
 ```
 
 The summary is always the skill's `description`. `maintainers` is one comma-separated
-string, because Agent Skills metadata values are strings. Without a `category` the website
-lists the skill under Other; without `maintainers` it shows no maintainer links.
+string, because Agent Skills metadata values are strings. Without `maintainers` the website
+credits whoever first added the skill.
 Your existing `metadata` entries, such as `author` or `collection`, are unaffected.
 
-The catalog suggests up to three categories from the description using conservative
-keyword rules. An unclear description remains uncategorised and appears under
-Other on the website. To override the suggestions, set `metadata.categories` to a
-comma-separated string, for example `Database, Security, Backend`. The first is
-the primary category. A group can set the same `categories` string in its README
-frontmatter. Existing `category` values are still supported; `categories` takes
-precedence if both fields are present. Suggestions are not semantic guarantees;
-review them and use the explicit override if they are inaccurate.
+**Categories.** Choose one to three, written as a comma-separated string, for example
+`Database, Security, Backend`. The first is the primary category. The website's skills
+directory filters by these. The choices are: Version Control, Testing, Debugging, Deployment, Documentation, Security, Productivity, Database, Frontend, Backend, DevOps, Performance, Accessibility, Monitoring, AI / Agents. The validator fails when `categories` is
+missing or empty, so leave it empty and the checks stay red until you pick. A group sets
+the same `categories` string in its README frontmatter. The older single `category` field
+is still read, but `categories` is what the validator requires.
 
 
 ### Adding a group (technical details)
@@ -215,7 +213,7 @@ The file must start with `---` on the very first line.
 | `description` | Yes | 20–1024 characters. Say what the skill does **and** when an agent should use it. |
 | `license` | No | A license name such as `MIT`, or the name of a bundled license file. |
 | `compatibility` | No | Up to 500 characters. Environment requirements, for example `Requires git and the GitHub CLI (gh)`. |
-| `metadata` | No | A mapping for extra information such as `author` or `version`. A standalone skill can also set `category`, `maintainers`, and `title` here ([details](#describing-a-standalone-skill)). |
+| `metadata` | Standalone skills only | A mapping for extra information such as `author` or `version`. A standalone skill must set `categories` here and can also set `maintainers` and `title` ([details](#describing-a-standalone-skill)). |
 | `allowed-tools` | No | Space-separated list of pre-approved tools. Experimental; support varies by agent. Avoid pre-approving shell access. |
 
 Agents may support additional fields (for example Claude Code's `disable-model-invocation`). The validator allows them, but every extra field makes a skill less portable, so use them only when necessary and explain why in your Pull Request.
@@ -352,8 +350,9 @@ The validator checks that:
 - the skill contains no symbolic links and has instructions after the frontmatter,
 - no file is larger than 1 MiB, binary files appear only under `assets/`, and text is UTF-8,
 - no file contains an obvious secret (private keys and common token formats),
-- the package `README.md` frontmatter, if present, uses only the documented fields,
-- a standalone skill's `metadata.category` is one of the listed categories and its `metadata.maintainers` are GitHub usernames.
+- every package and standalone skill chooses one to three `categories` from the list above,
+- the package `README.md` frontmatter uses only the documented fields,
+- a standalone skill's `metadata.maintainers`, when set, are GitHub usernames.
 
 It also **warns** (without failing) about bundled `scripts/`, executable files, instructions that pipe a download into a shell, and skill names without the package prefix. Warnings tell the reviewer where to look closely.
 
