@@ -1,21 +1,20 @@
 ---
 name: smart-git-workflow-copilot
-description: Provides interactive planning and strategic workflow design for branching, commit scoping, and task segmentation. Use this skill when planning how to organize work before executing actions with gitly-save, gitly-branches, or gitly-sync.
+description: Provides interactive planning and strategic workflow design for branching, commit scoping, and logical task segmentation. Use this skill when planning how to organize work before executing actions with gitly-save, gitly-branches, or gitly-sync.
 metadata:
   categories: Productivity, Backend, Frontend
   maintainers: odelia50872
 ---
 
-# Smart Git & Workflow Copilot
-
+## Purpose
 Provides interactive planning and strategic workflow design for branching, commit scoping, and logical task segmentation. This skill focuses purely on architectural planning and structuring your development process.
-
-## Prerequisites
-- Basic familiarity with your project structure and development goals.
 
 ## When to Use
 - When planning how to structure complex changes, features, or refactoring sessions before touching git commands.
 - When you need help deciding how to segment a large task into logical pieces.
+
+## Prerequisites
+- Basic familiarity with your project structure and development goals.
 
 ## Relationship with Gitly
 This skill focuses **only on planning and strategy**. For actual execution and command-line operations, use the dedicated independent skills in the `gitly` package:
