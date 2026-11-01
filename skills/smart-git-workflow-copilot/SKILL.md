@@ -1,6 +1,6 @@
 ---
 name: smart-git-workflow-copilot
-description: Provides interactive strategic guidance and workflow planning on branch management, commit scoping, and logical task segmentation. Use alongside version control tools during feature development, refactoring, or when preparing commits, pushes, and pull requests.
+description: Provides interactive planning and strategic workflow design for branching, commit scoping, and task segmentation. Use this skill when planning how to organize work before executing actions with gitly-save, gitly-branches, or gitly-sync.
 metadata:
   categories: Productivity, Backend, Frontend
   maintainers: odelia50872
@@ -8,28 +8,30 @@ metadata:
 
 # Smart Git & Workflow Copilot
 
-Provides interactive guidance and strategic planning on branch management, commit scoping, and logical task segmentation. Unlike direct execution tools, this skill focuses on architectural workflow planning, helping users structure their development process cleanly.
+Provides interactive planning and strategic workflow design for branching, commit scoping, and logical task segmentation. This skill focuses purely on architectural planning and structuring your development process.
 
 ## Prerequisites
-- Git installed and configured in the local development environment.
-- A clear understanding of the project's task scope.
+- Basic familiarity with your project structure and development goals.
 
 ## When to Use
-- During feature development, refactoring, or bug-fixing sessions when organizing work structure.
-- When changes span multiple distinct domains (e.g., modifying both database models and UI components simultaneously).
-- When preparing to commit, push, or open a pull request and needing strategic help organizing work into clean, atomic commits and branches without overlapping version-control execution.
+- When planning how to structure complex changes, features, or refactoring sessions before touching git commands.
+- When you need help deciding how to segment a large task into logical pieces.
+
+## Relationship with Gitly
+This skill focuses **only on planning and strategy**. For actual execution and command-line operations, use the dedicated independent skills in the `gitly` package:
+- **`gitly-save`**: Use when you are ready to save your work and create commits.
+- **`gitly-branches`**: Use when creating or switching between branches and experiments.
+- **`gitly-sync`**: Use when pushing changes, backing up, or syncing with GitHub.
 
 ## Rules & Best Practices
-1. **User approval required:** Always ask for and obtain explicit user confirmation before executing or recommending any automated action that modifies git state, such as committing, pushing, or opening a pull request.
-2. **Proactive boundary detection:** Alert the user when current edits start crossing multiple unrelated responsibilities, suggesting a clean branch switch or separation.
-3. **Conventional Commits standard:** Propose structured, descriptive commit messages adhering to standard conventions (e.g., `feat:`, `fix:`, `refactor:`, `chore:`) based on the code diff.
-4. **Atomic change management:** Guide the user to split large, monolithic changes into smaller, reviewable commits and logical branches.
+1. **User approval required:** Always ask for and obtain explicit user confirmation before recommending any git-state-changing actions.
+2. **Planning separation:** Keep planning advice strictly separate from execution commands, directing execution tasks to `gitly`.
 
 ## Instructions
-1. Analyze the user's current workspace changes or request from a structural and workflow perspective.
-2. Suggest logical task segmentation and appropriate branch strategies distinct from low-level execution.
-3. Propose conventional commit messages and wait for explicit user approval before proceeding with any state-changing recommendations.
+1. Analyze the user's development state and goals from a planning perspective.
+2. Propose a structured workflow plan, suggesting when to use `gitly-save`, `gitly-branches`, or `gitly-sync` for the actual execution.
+3. Wait for explicit user approval before proceeding.
 
 ## Examples
-- **User:** "Help me organize my current changes into a clean development strategy."
-- **Assistant:** Proposes a structured plan dividing the work into logical branches and conventional commit scopes, and asks: *"Would you like to proceed with this workflow plan?"*
+- **User:** "How should I structure my changes for this new feature?"
+- **Assistant:** Proposes a strategic task-segmentation plan and advises using `gitly-branches` to create the feature branch and `gitly-save` when committing.
