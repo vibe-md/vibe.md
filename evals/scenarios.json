@@ -27,6 +27,13 @@
     {"id": "code-hygiene-phantom-error", "prompt": "I'm getting \"useHistory is not exported from react-router-dom\" after your change.", "language": "en", "kind": "positive", "expected": ["code-hygiene"], "notes": "Phantom API error message."},
     {"id": "code-hygiene-cleanup", "prompt": "We switched to FlashList, clean up whatever the old carousel left behind.", "language": "en", "kind": "positive", "expected": ["code-hygiene"], "notes": "Dead code left by an abandoned approach."},
     {"id": "code-hygiene-duplicates-he", "prompt": "תבדוק שאין לנו כבר פונקציה שעושה את זה לפני שאתה כותב חדשה", "language": "he", "kind": "positive", "expected": ["code-hygiene"], "notes": "Hebrew: check whether a function for this already exists before writing a new one."},
-    {"id": "negative-cleaner-ui", "prompt": "Make the login screen look cleaner with more spacing.", "language": "en", "kind": "negative", "expected": [], "notes": "Shares the word 'clean' with code-hygiene but is ordinary UI work."}
+    {"id": "negative-cleaner-ui", "prompt": "Make the login screen look cleaner with more spacing.", "language": "en", "kind": "negative", "expected": [], "notes": "Shares the word 'clean' with code-hygiene but is ordinary UI work."},
+    {"id": "agent-guard-chatbot-secure", "prompt": "Is my customer support chatbot secure? It can look up orders and issue refunds.", "language": "en", "kind": "positive", "expected": ["security-agent-guard"]},
+    {"id": "agent-guard-prompt-injection", "prompt": "Can someone use prompt injection to make my email assistant forward messages?", "language": "en", "kind": "positive", "expected": ["security-agent-guard"]},
+    {"id": "agent-guard-rag-leak", "prompt": "Could one customer see another customer's documents through our RAG search?", "language": "en", "kind": "positive", "expected": ["security-agent-guard"], "notes": "Cross-user leakage in retrieval, phrased without the word 'security'."},
+    {"id": "agent-guard-he", "prompt": "תבדוק אם הסוכן שבניתי עם OpenAI בטוח, יש לו גישה לקבצים", "language": "he", "kind": "positive", "expected": ["security-agent-guard"]},
+    {"id": "ambiguous-review-ai-changes", "prompt": "Check my changes for security issues before I commit. I added a summarize endpoint that calls an LLM.", "language": "en", "kind": "ambiguous", "expected": ["security-agent-guard", "pre-commit-security-review"], "notes": "Acceptable: either skill, or check the diff for model calls first. Not acceptable: skip the review."},
+    {"id": "negative-build-chatbot", "prompt": "Add a chatbot to my website that answers questions about our products.", "language": "en", "kind": "negative", "expected": [], "notes": "Building an AI feature, not reviewing one."},
+    {"id": "negative-agent-word", "prompt": "Add a user-agent column to the request log table.", "language": "en", "kind": "negative", "expected": [], "notes": "Shares the word 'agent' with this skill but is ordinary feature work."}
   ]
 }
