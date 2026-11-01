@@ -33,8 +33,8 @@ Do not use this skill for unrelated programming errors.
 
 ## Prerequisites
 
-- `git` is installed and the repository has been initialised.
-- A project with a build or test command to verify the resolution.
+- Git installed and configured.
+- A project repository with build or test commands available.
 
 ## Instructions
 
@@ -241,3 +241,12 @@ Expected behavior:
 3. Identify duplicate or incompatible logic.
 4. Propose a clean combined implementation.
 5. Explain how to test the result.
+
+## Comparison with gitly-merge
+
+Use `git-conflict-resolver` when Git stops mid-operation with
+conflict markers and you need step-by-step guidance to understand
+and resolve the competing changes.
+
+Use `gitly-merge` when you want to manage and execute the overall
+branch-merging workflow from start to finish.
