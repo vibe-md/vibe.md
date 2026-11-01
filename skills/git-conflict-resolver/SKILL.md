@@ -31,6 +31,11 @@ Use this skill when:
 
 Do not use this skill for unrelated programming errors.
 
+## Prerequisites
+
+- Git installed and configured.
+- A project repository with build or test commands available.
+
 ## Instructions
 
 ### Step 1: Understand the Situation
@@ -49,7 +54,7 @@ git status
 git diff --name-only --diff-filter=U
 ```
 
-### Step 2: Understand the Conflict
+### Step 2: Understand Conflict Markers and Branch Roles
 
 Git conflict markers typically look like this:
 
@@ -61,23 +66,24 @@ Incoming branch changes
 >>>>>>> feature-branch
 ```
 
-Explain the meaning:
+Explain the meaning based on the current Git operation:
 
-- `<<<<<<< HEAD`: Beginning of the current-side changes.
-- `=======`: Separator between the two versions.
-- `>>>>>>> branch-name`: End of the incoming-side changes.
-
-During a rebase, the meaning of "ours" and "theirs"
-can be confusing. Inspect the actual operation before
-recommending a choice.
+- **During a Merge:**
+  - `<<<<<<< HEAD` (Ours): The branch you were on when you ran `git merge`.
+  - `>>>>>>> branch-name` (Theirs): The branch you are merging into your current branch.
+- **During a Rebase:**
+  - `<<<<<<< HEAD` (Ours): The upstream branch or commit being rebased onto (the base).
+  - `>>>>>>> commit-hash/branch` (Theirs): The commit/branch containing your custom changes that are being reapplied.
 
 ### Step 3: Inspect Both Versions
 
 For every conflicted file:
 
-1. Read the complete file.
-2. Understand the current branch implementation.
-3. Understand the incoming branch implementation.
+1. Inspect the two original versions directly from the Git index:
+   - Stage 2 (`:2:`): "Ours" version.
+   - Stage 3 (`:3:`): "Theirs" version.
+2. Handle cases where a file was deleted on one side (check if the file exists in stage 2 or 3).
+3. Read the complete file and understand the implementations on both sides.
 4. Identify what each change is trying to accomplish.
 5. Check whether both changes can be combined.
 6. Look for dependencies between the conflicting changes.
@@ -85,7 +91,11 @@ For every conflicted file:
 Useful commands:
 
 ```bash
-git diff
+# View versions directly from the Git index
+git show :2:path/to/file # "Ours" version
+git show :3:path/to/file # "Theirs" version
+
+# Compare working tree with specific sides
 git diff --ours -- path/to/file
 git diff --theirs -- path/to/file
 ```
@@ -136,27 +146,28 @@ the developer's authorization.
 After editing the conflicted files:
 
 1. Search for remaining conflict markers.
-2. Run relevant tests.
-3. Run the project's build or compilation command.
-4. Inspect the final diff.
+2. Inspect all staged changes to ensure no unrelated staged files are included.
+3. Run relevant tests.
+4. Run the project's build or compilation command.
 5. Confirm that all intended changes were preserved.
 
 Useful commands:
 
 ```bash
-git diff --check
-git diff
+grep -rn '^<<<<<<<\|^=======$\|^>>>>>>>' <files>
+git diff --staged
 git status
 ```
 
 ### Step 7: Complete the Git Operation
 
-Only after the developer confirms the resolution:
+Only after the developer confirms the resolution and staged files:
 
 For a merge:
 
 ```bash
 git add <resolved-files>
+git status # Ensure only intended files are staged
 git commit
 ```
 
@@ -186,6 +197,7 @@ First verify which Git operation is in progress.
 - Never use `git checkout --ours` or `--theirs`
   on all files without inspecting their contents.
 - Never claim a conflict is resolved without verification.
+- Always check staged changes (`git diff --staged`) before committing to avoid committing unrelated files.
 - Preserve the original intent of both branches whenever possible.
 
 ## Examples
@@ -197,7 +209,7 @@ User:
 
 Expected behavior:
 
-1. Inspect both implementations.
+1. Inspect both implementations using `git show :2:file` and `git show :3:file`.
 2. Identify what each branch changed.
 3. Determine whether both changes are needed.
 4. Suggest a combined implementation.
@@ -211,12 +223,11 @@ User:
 
 Expected behavior:
 
-1. Run git status.
+1. Run `git status`.
 2. Identify the files with conflicts.
-3. Explain the difference between the current
-   and incoming changes during this rebase.
+3. Explain the difference between "Ours" and "Theirs" in the context of a rebase.
 4. Propose a resolution.
-5. Verify the changes before continuing.
+5. Verify staged changes before continuing.
 
 ### Example 3: Developer wants to keep both changes
 
@@ -230,3 +241,12 @@ Expected behavior:
 3. Identify duplicate or incompatible logic.
 4. Propose a clean combined implementation.
 5. Explain how to test the result.
+
+## Comparison with gitly-merge
+
+Use `git-conflict-resolver` when Git stops mid-operation with
+conflict markers and you need step-by-step guidance to understand
+and resolve the competing changes.
+
+Use `gitly-merge` when you want to manage and execute the overall
+branch-merging workflow from start to finish.
