@@ -31,6 +31,11 @@ Use this skill when:
 
 Do not use this skill for unrelated programming errors.
 
+## Prerequisites
+
+- `git` is installed and the repository has been initialised.
+- A project with a build or test command to verify the resolution.
+
 ## Instructions
 
 ### Step 1: Understand the Situation
