@@ -63,6 +63,8 @@ Git and GitHub workflows for people who build with AI agents: save, compare, res
 Practical skills for building and checking features that use language models.
 
 - [llm-eval-builder](llm/llm-eval-builder/SKILL.md) — Builds a small, repeatable evaluation set and runner for an LLM feature, with deterministic checks, optional rubric grading, and baseline comparison that catches regressions after a prompt or model change. Use when adding evals to an AI feature, checking whether a prompt or model change made outputs better or worse, or when the user asks how to measure LLM output quality. Not for security review, general unit tests, or one-off prompt wording.
+- [llm-model-migration-check](llm/llm-model-migration-check/SKILL.md) — Plans a safe switch from one language model to another. Finds every model ID and model-specific setting in the project, checks the provider's current documentation for deprecations and API differences, compares eval results on the current and target models, and drafts a rollout and rollback plan. Use when a provider retires a model, when the team wants to upgrade or change models, or when model IDs are scattered through the code. Does not change production settings or deploy.
+- [llm-prompt-review](llm/llm-prompt-review/SKILL.md) — Reviews the prompts and prompt templates behind an LLM feature for a clear task, an output format that matches the code that parses it, handling of edge cases, and testability, then proposes specific edits. Use when the user asks to review or improve a prompt, before merging a prompt change, or when an LLM feature gives inconsistent or unparseable output. Read-only unless the user asks for edits. Not for prompt-injection or other security review.
 
 ### [security](security/)
 
