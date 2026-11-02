@@ -14,6 +14,8 @@ Skills that help a coding agent build, measure, and maintain features that call 
 | Skill | What it does |
 | --- | --- |
 | `llm-eval-builder` | Builds a small, repeatable evaluation set and runner for an LLM feature, with deterministic checks, optional rubric grading, and baseline comparison for regressions. Asks before any paid model call. |
+| `llm-prompt-review` | Reviews prompts and prompt templates for a clear task, an output format that matches the parser, edge cases, and testability, then proposes specific edits. Read-only unless asked. |
+| `llm-model-migration-check` | Plans a safe switch between models: inventories model IDs and settings, checks the provider's current documentation, compares evals on both models, and drafts a rollout and rollback plan. Does not deploy. |
 
 ## Related skills
 
