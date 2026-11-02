@@ -58,6 +58,12 @@ Git and GitHub workflows for people who build with AI agents: save, compare, res
 - [gitly-status](gitly/gitly-status/SKILL.md) — Explain whether project work is saved, backed up, current, or at risk using local Git evidence. Use when the user asks what state the project is in or whether work is safe; do not use to test application behavior.
 - [gitly-sync](gitly/gitly-sync/SKILL.md) — Explain and safely synchronize local work with a Git remote using fetch, fast-forward pull, or non-force push. Use for sync, push, pull, online backup, "back it up", "סנכרן", or "גיבוי בענן".
 
+### [security](security/)
+
+Security reviews for code, starting with risks specific to applications that use LLMs and AI agents.
+
+- [security-agent-guard](security/security-agent-guard/SKILL.md) — Reviews code that uses LLMs or AI agents for AI-specific security risks - prompt injection, excessive agent permissions, unsafe tool calls, cross-user data leaks in retrieval (RAG), secrets or personal data in prompts, and unsafe use of model output. Reports evidence-based findings with file and line, severity, certainty, and a fix. Use when the user asks to review the security of an AI feature, chatbot, agent, tool integration, or RAG pipeline. Not for general code security or committed secrets.
+
 ### Standalone skills
 
 - [code-hygiene](code-hygiene/SKILL.md) — Keeps AI-written code real, used, and written once. Checks for an existing helper before creating a new one, verifies every third-party API against the installed version before using it, and cleans up code the change left orphaned. Use when adding functions, hooks, components, or utilities; when calling or upgrading a third-party package or editing framework config; after finishing a feature or abandoning an approach; or when an error says something is undefined, not a function, not exported, or an unknown option.
