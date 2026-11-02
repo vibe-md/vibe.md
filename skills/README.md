@@ -58,6 +58,12 @@ Git and GitHub workflows for people who build with AI agents: save, compare, res
 - [gitly-status](gitly/gitly-status/SKILL.md) — Explain whether project work is saved, backed up, current, or at risk using local Git evidence. Use when the user asks what state the project is in or whether work is safe; do not use to test application behavior.
 - [gitly-sync](gitly/gitly-sync/SKILL.md) — Explain and safely synchronize local work with a Git remote using fetch, fast-forward pull, or non-force push. Use for sync, push, pull, online backup, "back it up", "סנכרן", or "גיבוי בענן".
 
+### [llm](llm/)
+
+Practical skills for building and checking features that use language models.
+
+- [llm-eval-builder](llm/llm-eval-builder/SKILL.md) — Builds a small, repeatable evaluation set and runner for an LLM feature, with deterministic checks, optional rubric grading, and baseline comparison that catches regressions after a prompt or model change. Use when adding evals to an AI feature, checking whether a prompt or model change made outputs better or worse, or when the user asks how to measure LLM output quality. Not for security review, general unit tests, or one-off prompt wording.
+
 ### [security](security/)
 
 AI application security reviews and local access-control regression tests.
