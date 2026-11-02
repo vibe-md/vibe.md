@@ -117,12 +117,15 @@ class CatalogTests(unittest.TestCase):
         write_skill(self.skills / "lonely", "lonely", "Does one thing for the user. Use it when testing standalone skills.")
         self.assertEqual(self.build("--all").returncode, 0)
         save, status = self.package("alpha")["skills"]
+        self.assertEqual(save["path"], "skills/alpha/alpha-save/SKILL.md")
+        self.assertEqual(status["path"], "skills/alpha/alpha-status/SKILL.md")
         self.assertEqual(save["when_to_use"], "- The user asks to save.\n\n### Not for\n\nDeleting.")
         self.assertEqual(save["examples"], "**User:** \"Save my work.\"\n\n```text\n## A heading inside code is content\n```")
         # Without the sections, "when to use" falls back to the description and there are no examples.
         self.assertEqual(status["when_to_use"], status["description"])
         self.assertIsNone(status["examples"])
         lonely = self.package("lonely")["skills"][0]
+        self.assertEqual(lonely["path"], "skills/lonely/SKILL.md")
         self.assertEqual(lonely["when_to_use"], "Does one thing for the user. Use it when testing standalone skills.")
         self.assertIsNone(lonely["examples"])
         self.assertEqual(self.build("--verify", str(self.out)).returncode, 0)

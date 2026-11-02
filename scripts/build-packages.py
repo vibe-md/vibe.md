@@ -207,9 +207,11 @@ def markdown_section(body, title):
     return "\n".join(lines).strip() or None
 
 
-def describe_skill(path, name):
+def describe_skill(skills_dir, path, name):
     """One skill's catalog entry, with the sections a website page needs to explain it.
 
+    'path' is the SKILL.md location relative to the repository root, such as
+    "skills/llm/llm-eval-builder/SKILL.md", for linking to the source.
     'when_to_use' falls back to the description, which by the contribution rules already
     says when to use the skill. 'examples' is null when the skill has no Examples section.
     """
@@ -217,6 +219,7 @@ def describe_skill(path, name):
     description = " ".join(str(data.get("description", "")).split())
     return {
         "name": name,
+        "path": "skills/" + Path(path).relative_to(skills_dir).as_posix(),
         "description": description,
         "when_to_use": markdown_section(body, "When to Use") or description,
         "examples": markdown_section(body, "Examples"),
@@ -274,12 +277,12 @@ def describe_package(skills_dir, group, artifacts):
     standalone = (group_dir / "SKILL.md").is_file()
     if standalone:
         data, _ = read_frontmatter(group_dir / "SKILL.md")
-        skills = [describe_skill(group_dir / "SKILL.md", group)]
+        skills = [describe_skill(skills_dir, group_dir / "SKILL.md", group)]
         meta, body, readme = standalone_metadata(data), skills[0]["description"], None
     else:
         readme = group_dir / "README.md"
         meta, body = read_frontmatter(readme) if readme.is_file() else ({}, "")
-        skills = [describe_skill(entry, entry.parent.name) for entry in sorted(group_dir.glob("*/SKILL.md"))]
+        skills = [describe_skill(skills_dir, entry, entry.parent.name) for entry in sorted(group_dir.glob("*/SKILL.md"))]
     shared = sorted(entry.parent.name for entry in (skills_dir / "_shared").glob("*/SKILL.md"))
     package = {
         "id": group,
