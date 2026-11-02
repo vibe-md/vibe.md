@@ -1,19 +1,20 @@
 ---
 title: Security
-summary: Security reviews for code, starting with risks specific to applications that use LLMs and AI agents.
+summary: AI application security reviews and local access-control regression tests.
 categories: Security, AI / Agents
 maintainers: [NoaGaler]
 ---
 
 # Security
 
-Skills that help coding agents review code for security problems and explain how to fix them.
+Skills that help coding agents review AI application security and turn access rules into local regression tests.
 
 ## Skills
 
 | Skill | What it does |
 | --- | --- |
 | `security-agent-guard` | Reviews code that uses LLMs or AI agents for prompt injection, excessive agent permissions, unsafe tool calls, cross-user leaks in retrieval (RAG), sensitive data in prompts, and unsafe use of model output. Read-only: it reports findings and does not change code. |
+| `security-access-regression` | Turns declared access rules into local regression tests with allowed controls, forbidden reads, unchanged-state assertions, and disposable-copy checks that the tests detect regressions. Writes tests, not a general security audit. |
 
 ## Related skills
 
