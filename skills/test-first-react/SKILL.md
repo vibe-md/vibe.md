@@ -83,3 +83,14 @@ test('shows error when submitting empty form', async () => {
   await userEvent.click(screen.getByRole('button', { name: /login/i }));
   expect(screen.getByText(/email is required/i)).toBeInTheDocument();
 });
+```
+
+## Examples
+
+**User:** "Add a login form with email and password."
+
+**Agent:** Restates the requirement, then proposes the tests first: the form shows both fields, submitting it empty shows "Email is required", and a valid submission calls the submit handler. Shows the tests and waits for approval. After approval, writes the minimal `LoginForm`, runs the tests, and reports the result.
+
+**User:** "The new test for the date picker is failing."
+
+**Agent:** Stops without changing the code or the tests. Shows the failing test and its error, presents options A to D from Step 5, and waits for the user's choice.
