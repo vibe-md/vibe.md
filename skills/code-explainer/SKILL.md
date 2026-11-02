@@ -24,7 +24,7 @@ Do not use this skill to apply code modifications or refactor code without expli
 ## Instructions
 1. Review the code snippet, function, or file provided by the user.
 2. Outline the overall objective of the code module.
-3. Provide a function-by-function breakdown detailing parameters, return values, and core logic.
+3. Provide a function-by-function breakdown detailing parameters, return values, and core logic. For large files, split the explanation into logical sections or ask the user which part to focus on first.
 4. Highlight any notable edge cases, side effects, or dependencies.
 5. Present the breakdown clearly and concisely to the user.
 
