@@ -60,12 +60,14 @@ Git and GitHub workflows for people who build with AI agents: save, compare, res
 
 ### [security](security/)
 
-Security reviews for code, starting with risks specific to applications that use LLMs and AI agents.
+AI application security reviews and local access-control regression tests.
 
+- [security-access-regression](security/security-access-regression/SKILL.md) — Turns an application's access rules into local regression tests that prove who can read or change whose records. Use when adding tenant isolation, owner-only endpoints, private downloads, role permissions, or tests for a cross-user data leak. Not for general security review, login implementation, frontend/backend contract comparison, or testing a live service.
 - [security-agent-guard](security/security-agent-guard/SKILL.md) — Reviews code that uses LLMs or AI agents for AI-specific security risks - prompt injection, excessive agent permissions, unsafe tool calls, cross-user data leaks in retrieval (RAG), secrets or personal data in prompts, and unsafe use of model output. Reports evidence-based findings with file and line, severity, certainty, and a fix. Use when the user asks to review the security of an AI feature, chatbot, agent, tool integration, or RAG pipeline. Not for general code security or committed secrets.
 
 ### Standalone skills
 
+- [api-check](api-check/SKILL.md) — Compare frontend API requests and consumers with backend routes to find mismatches in methods, paths, field names, response shapes, and error handling. Use for API integration reviews and debugging frontend/backend contract incompatibilities; report exact mismatches with file references.
 - [code-hygiene](code-hygiene/SKILL.md) — Keeps AI-written code real, used, and written once. Checks for an existing helper before creating a new one, verifies every third-party API against the installed version before using it, and cleans up code the change left orphaned. Use when adding functions, hooks, components, or utilities; when calling or upgrading a third-party package or editing framework config; after finishing a feature or abandoning an approach; or when an error says something is undefined, not a function, not exported, or an unknown option.
 - [generic-function-refactorer](generic-function-refactorer/SKILL.md) — Identifies hard-coded or overly specific functions, components, or utilities in the codebase and refactors them into clean, reusable, parameter-driven abstractions. Use when cleaning up code, improving reusability, or abstracting repetitive implementations.
 - [git-conflict-resolver](git-conflict-resolver/SKILL.md) — Helps developers understand, investigate, and safely resolve Git merge conflicts, rebase conflicts, cherry-pick conflicts, and competing changes across branches. Use when Git reports merge conflicts or when a developer needs help reconciling conflicting file changes.
