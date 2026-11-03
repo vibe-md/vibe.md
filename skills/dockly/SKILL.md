@@ -12,6 +12,9 @@ metadata:
 - Docker and Docker Compose installed on the user's machine (if testing locally).
 - Standard project configuration files exist in the directory (e.g., `package.json`, `requirements.txt`, `.csproj`).
 
+## Purpose
+This skill provides a structured workflow for generating Docker configurations (`Dockerfile` and `docker-compose.yml`) across different tech stacks. It safely abstracts away containerization complexities, ensuring deployments are secure and properly configured without requiring deep DevOps expertise.
+
 ## When to Use
 Use this skill when the user asks to "deploy the app", "dockerize the project", "put this on a server", or when they struggle with local environment differences (e.g., "it works on my machine but not elsewhere"). It is designed to abstract away containerization complexities for users without DevOps experience.
 
