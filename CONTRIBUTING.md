@@ -101,7 +101,7 @@ Key rules:
 1. `skills/` is the single source of truth. Each skill exists exactly once, there.
 2. A skill has `SKILL.md`; a group contains skill directories one level down and has no `SKILL.md` of its own. Group names use lowercase kebab-case. `skills/_shared/` is reserved for common skills installed with every selection.
 3. Skills are discovered automatically by the installer, validator, and CI. Names must be unique across standalone skills, all groups, and shared skills because installation flattens them into one directory.
-4. Agent directories such as `.claude/skills/` are *installation destinations*, not sources. Never commit skills there.
+4. Agent directories such as `.claude/skills/` are *installation destinations*, not sources. Never commit skills there. `.claude/agents/` is different: it holds the maintainers' Claude Code review and docs subagents. It is project tooling, never contains skills, and is not installed or published.
 5. Test fixtures live in `tests/fixtures/` and never appear in the public catalog.
 
 ## Adding a skill
