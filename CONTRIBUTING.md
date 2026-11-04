@@ -85,9 +85,12 @@ vibe.md/
 ├── scripts/
 │   ├── install.sh             # Installer: install, update, uninstall (bash, no dependencies)
 │   ├── validate-skills.py     # Validator used locally and in CI
+│   ├── check-contribution.py  # Friendly report on a Pull Request's changes, locally and in CI
 │   └── build-packages.py      # Builds ZIP downloads and catalog.json for every package
 ├── evals/                     # Natural-language scenarios for checking skill selection
 ├── tests/                     # Validator, installer, lifecycle, packaging, and catalog tests
+├── docs/skill-contribution-check/SKILL.md  # How agents check a skill before a PR (not a published skill)
+├── AGENTS.md, CLAUDE.md       # Tell coding agents to run that check (never published)
 └── .github/
     ├── workflows/validate-skills.yml   # Runs on every Pull Request
     ├── workflows/publish.yml           # Runs only after a merge to main
@@ -111,7 +114,8 @@ Key rules:
 3. **Create the directory** `skills/<package>/<package>-<skill>/` and add `SKILL.md`. A skill with no siblings may also live on its own as `skills/<skill-name>/SKILL.md`; it is published as a package of one skill, and its name needs no prefix.
 4. **Add optional resources** (`scripts/`, `references/`, `assets/`) only if the skill needs them.
 5. **Validate and test** as described below.
-6. **Open a Pull Request.**
+6. **Check your skill.** Ask your agent "check my skill before I open a PR". It follows [`docs/skill-contribution-check/SKILL.md`](docs/skill-contribution-check/SKILL.md) and tells you what to fix ([details](#check-your-skill)).
+7. **Open a Pull Request.**
 
 A skill contribution should stay inside its standalone skill or group directory. If you think the tooling needs to change to support your skill, open an issue first so we can keep the infrastructure generic.
 
@@ -370,13 +374,36 @@ bash scripts/install.sh --skill <skill-name> --agent claude-code --project /tmp/
 
 Then open the agent in that project, check that the skill is discovered, and run a realistic request. Mention which agents you tested in your Pull Request.
 
+### Check your skill
+
+Before you open the Pull Request, ask your coding agent: **"check my skill before I open a PR"**.
+It follows the instructions in [`docs/skill-contribution-check/SKILL.md`](docs/skill-contribution-check/SKILL.md): it
+compares your branch with vibe.md's `main`, runs the checks above, looks for safety problems and
+changes outside your skill's folder, and reports **Ready** or **Not ready yet** with the file and
+line of each problem. It does not change your files unless you ask, and it never opens the Pull
+Request for you. It can also draft your Pull Request description from the template.
+
+You may not even need to ask. This repository has an `AGENTS.md` file (and a `CLAUDE.md` that points
+to it), which many coding agents read. It tells them to run this check when you add or change a skill
+and say you're done. If your agent doesn't pick it up, tell it to read and follow
+`docs/skill-contribution-check/SKILL.md`. It lives in `docs/`, not `skills/`, because it is only for
+contributing to this repository: it is not published or installed.
+
+To see the same report the Pull Request will get, run it yourself:
+
+```bash
+python3 scripts/check-contribution.py --base upstream/main   # in a fork; use origin/main in a clone of vibe-md/vibe.md
+```
+
+In a fork, add vibe.md as `upstream` once: `git remote add upstream https://github.com/vibe-md/vibe.md.git`, then `git fetch upstream main`.
+
 ## Pull Request workflow
 
 1. Create a branch: `git checkout -b add-release-notes-skill`.
 2. Commit your changes with a clear message, for example `Add release-notes skill`.
 3. Push to your fork and open a Pull Request against `main`.
-4. Fill in the Pull Request template checklist.
-5. Wait for CI. The **Validate skills** workflow runs the validator, builds every package and the catalog, and runs the full test suite on Linux and macOS. If it fails, open the failed job; validation errors are also shown inline on the changed files. The first time you contribute, a maintainer has to approve the workflow run before it starts.
+4. Fill in the Pull Request template checklist. Your agent can draft it for you when it [checks your skill](#check-your-skill).
+5. Wait for CI. The **Validate skills** workflow runs the validator, builds every package and the catalog, and runs the full test suite on Linux and macOS. If it fails, open the failed job; validation errors are also shown inline on the changed files. The **Contribution check** job adds a plain-language report to the job summary. It fails only on clear problems, such as validator errors, hidden characters, or secrets. Everything else is a warning to look at. The first time you contribute, a maintainer has to approve the workflow run before it starts.
 6. Respond to review feedback by pushing more commits to the same branch. New commits require a fresh approval.
 7. A maintainer merges the Pull Request once CI passes and the review is approved. **Contributors cannot merge their own Pull Requests.**
 

@@ -108,6 +108,20 @@ approve its CI run before merging. After enabling the setting and merging the
 workflow, use **Actions → Update skills README → Run workflow** to verify setup;
 a PR is created only when the index differs from main.
 
+The maintainers also run a private scheduled routine that verifies and merges
+these PRs. It approves and merges one only when the PR changes nothing except
+`skills/README.md` and the file matches, byte for byte, what
+`scripts/update-skills-readme.py` on main produces. It leaves any other PR
+alone and reports it to the maintainers. The routine does not approve workflow
+runs, so CI on these PRs shows as waiting for approval (`action_required`).
+
+To merge one by hand when the routine is off:
+
+1. Check out an up-to-date `main` and run `python3 scripts/update-skills-readme.py`.
+2. Run `git diff skills/README.md` and check that it matches the PR's change.
+3. Check that the PR touches only `skills/README.md`.
+4. Approve and merge the PR.
+
 Never switch the validation workflow to `pull_request_target`, and do not add a
 step that runs code from a Pull Request with a token or secret in the environment.
 
