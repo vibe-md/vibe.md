@@ -26,6 +26,7 @@
 - [ ] I tested the skill with at least one coding agent. Agents tested: <!-- e.g. Claude Code, Codex -->
 - [ ] Existing skills are unaffected; group installation also preserves other installed groups.
 - [ ] Third-party material is properly licensed and attributed.
+- [ ] I checked my skill with `docs/skill-contribution-check/SKILL.md` (or my agent did).
 
 ## Validation
 

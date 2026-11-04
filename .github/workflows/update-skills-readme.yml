@@ -52,4 +52,4 @@ jobs:
           body: |
             Updates the generated list of skills from the current contents of `skills/`.
 
-            Please review the generated changes and approve the workflow run if GitHub requests it.
+            Maintainers verify that this matches `scripts/update-skills-readme.py` on main before merging.

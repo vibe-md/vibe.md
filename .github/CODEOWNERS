@@ -13,6 +13,12 @@
 /tests/            @AdiBer1 @NirGeron98
 /skills/_shared/   @AdiBer1 @NirGeron98
 
+# Instructions that coding agents follow automatically in this repository.
+/AGENTS.md         @AdiBer1 @NirGeron98
+/CLAUDE.md         @AdiBer1 @NirGeron98
+/.claude/          @AdiBer1 @NirGeron98
+/docs/skill-contribution-check/    @AdiBer1 @NirGeron98
+
 # Packages. Package maintainers may be listed here in addition to the project
 # maintainers, for example:  /skills/security/  @AdiBer1 @NirGeron98 @security-maintainer
 /skills/gitly/     @AdiBer1 @NirGeron98

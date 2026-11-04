@@ -73,18 +73,65 @@ jobs:
       - name: Run validator, installer, lifecycle, packaging, and catalog tests
         run: python -m unittest discover -s tests -v
 
+  # A plain-language report on the Pull Request's changes, in the job summary and as
+  # annotations. Fixed rules only: no AI, no network, no secrets, nothing posted. It
+  # fails only on clear-cut problems (validator errors, hidden characters, secrets).
+  contribution-check:
+    name: Contribution check
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # The merge commit and its first parent, the base branch, to compare against.
+          fetch-depth: 2
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements-dev.txt
+
+      - name: Install dependencies
+        run: python -m pip install -r requirements-dev.txt
+
+      - name: Write the contribution report
+        env:
+          # Untrusted text: passed through the environment and written to a file, never
+          # interpolated into the script.
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          printf '%s' "$PR_BODY" > "$RUNNER_TEMP/pr-body.md"
+          python scripts/check-contribution.py --base HEAD^1 --pr-body-file "$RUNNER_TEMP/pr-body.md"
+
   # Single, stable check to require in branch protection, independent of the matrix.
   ci-passed:
     name: CI passed
-    needs: test
+    needs: [test, contribution-check]
     if: always()
     runs-on: ubuntu-latest
     steps:
       - name: Check results
         env:
           RESULT: ${{ needs.test.result }}
+          CONTRIBUTION: ${{ needs.contribution-check.result }}
+          EVENT: ${{ github.event_name }}
         run: |
           if [ "$RESULT" != "success" ]; then
             echo "Validation or tests failed. Open the 'Validate and test' jobs above for details."
+            exit 1
+          fi
+          # The contribution check runs only for Pull Requests; on main it is skipped. On a
+          # Pull Request it must have run and passed.
+          if [ "$EVENT" = "pull_request" ] && [ "$CONTRIBUTION" != "success" ]; then
+            echo "The contribution check did not pass. Open the 'Contribution check' job summary for details."
+            exit 1
+          fi
+          if [ "$CONTRIBUTION" != "success" ] && [ "$CONTRIBUTION" != "skipped" ]; then
+            echo "The contribution check found something that must be fixed. Open the 'Contribution check' job summary for details."
             exit 1
           fi
