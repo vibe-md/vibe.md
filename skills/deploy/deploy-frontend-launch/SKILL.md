@@ -42,7 +42,7 @@ Do not use this skill:
 - to deploy a separate backend server or create a database. Say these are
   planned for later tracks of this package.
 - to add or move a custom domain on its own. Domains need their own explicit
-  yes; follow the platform guide only if the user asks.
+  yes; offer `deploy-frontend-domain` if the user asks.
 - for Docker, VPS, or Kubernetes hosting. That is not this package.
 
 ## Prerequisites

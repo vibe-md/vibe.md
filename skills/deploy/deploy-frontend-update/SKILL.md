@@ -67,7 +67,10 @@ Do not use this skill:
    site visitors see. Recommend a preview first for anything bigger than a text
    fix, where the host offers it:
    - **Vercel, Netlify, Cloudflare Pages with Git:** push to a branch other than
-     the production branch (or open a pull request) to get a preview address.
+     the production branch to get a preview address. On Netlify, a branch alone
+     gets one only if branch deploys are turned on; otherwise also open a pull
+     request (a request on GitHub to merge that branch), which gets a deploy
+     preview.
      With `gitly-branches` the user can make that branch in plain words.
    - **With the host's command-line tool:** Vercel `vercel deploy`; Netlify
      `netlify deploy` (a draft); Cloudflare Pages
@@ -113,7 +116,7 @@ Do not use this skill:
 **Agent:** Lists the changes, builds locally (passes), and notices the new
 `/contact` route works on Netlify thanks to the existing `_redirects` rule.
 Recommends a preview: creates a branch with `gitly-branches`, and with a yes
-saves and pushes it. Checks the deploy preview address, including `/contact`.
+saves and pushes it, and opens a pull request. Checks the deploy preview address, including `/contact`.
 Asks before publishing; with a yes, merges into `main` and pushes. Watches the
 production deploy and confirms the live homepage shows the new text and
 `/contact` opens directly.

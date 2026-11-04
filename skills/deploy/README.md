@@ -8,8 +8,8 @@ maintainers: [NirGeron98, AdiBer1]
 # Deploy
 
 You built a site with an AI tool and it works on your computer. Deploying means
-putting a copy of it on a hosting service, so anyone can open it at a web
-address. This package walks your coding agent through that: it checks the
+putting a copy of it on a hosting service (a "host"), so anyone can open it at
+a web address. This package walks your coding agent through that: it checks the
 project is ready, connects it to a host, sets the settings the site needs, and
 does not say "done" until it has opened the live address and seen it work.
 
@@ -55,12 +55,12 @@ them for your project, reading each host's current prices and rules.
 | --- | --- |
 | `deploy-frontend-check` | Checks whether a site is ready to go online. It finds the framework (the toolkit your site is built with, such as React or Next.js) and runs the build on your computer. It lists the settings the site needs, by name only. It flags secrets in public settings, file names that differ only in capital letters, unsaved or unpushed work, and backend or database parts that are not covered yet. It does not edit your code or settings (the build only makes its usual output files), and ends with a plain ready or not-ready report. |
 | `deploy-frontend-choose` | Helps you pick a host (Vercel, Netlify, Cloudflare Pages, or GitHub Pages) for this site. It checks whether the site needs server code or secrets, what you plan to use it for, and which accounts you already have, reads each host's current free-plan rules, and recommends one, with the reason. It changes nothing. |
-| `deploy-frontend-launch` | Puts the site online for the first time on any of the four hosts. It runs the check, helps you log in safely, and connects your GitHub repository (or uses the host's command-line tool, which you type commands into, or a GitHub Actions workflow for GitHub Pages). It sets the settings, asks before going public, and deploys. It opens the live address and its main pages before saying it is done. |
+| `deploy-frontend-launch` | Puts the site online for the first time on any of the four hosts. It runs the check, helps you log in safely, and connects your GitHub repository (or uses the host's command-line tool, which you type commands into, or, for GitHub Pages, a GitHub Actions workflow, which is an automatic job that builds your site after each push). It sets the settings, asks before going public, and deploys. It opens the live address and its main pages before saying it is done. |
 | `deploy-frontend-env` | Puts the settings your site needs (environment variables) on the host safely. It explains public and secret settings, finds the names the site uses, and has you type each value into the host yourself, so no value ever passes through the chat. Then it redeploys and checks. |
-| `deploy-frontend-domain` | Connects your own domain (such as `my-site.com`). It looks at the domain's current settings first, explains each DNS record in plain words, protects your email settings, waits for the change to spread, and checks the padlock (HTTPS). It asks before every change and never buys anything. |
+| `deploy-frontend-domain` | Connects your own domain (such as `my-site.com`). It looks at the domain's current settings first, explains each DNS record (a line in the internet's address book that says where your domain points) in plain words, protects your email settings, waits for the change to spread, and checks the padlock (HTTPS). It asks before every change and never buys anything. |
 | `deploy-frontend-update` | Publishes your later changes. It builds them, uses a test address (a preview) first where the host offers one, asks before changing the live site, and checks it afterwards. |
-| `deploy-frontend-fix` | Finds out why a deploy failed or the live site is broken, from the host's logs. It explains the cause in plain words, proposes the smallest fix, and asks before changing anything. |
-| `deploy-frontend-rollback` | Gets a broken live site back to the last version that worked, using the host's own rollback or Git, then checks the live address. It asks first and tells you what happens with your next update. |
+| `deploy-frontend-fix` | Finds out why a deploy failed or the live site is broken, from the host's logs (its step-by-step record of the build). It explains the cause in plain words, proposes the smallest fix, and asks before changing anything. |
+| `deploy-frontend-rollback` | Gets a broken live site back to the last version that worked, using the host's own rollback, or by undoing the change in Git (the tool that saves your project's history), then checks the live address. It asks first and tells you what happens with your next update. |
 
 ## Related skills
 

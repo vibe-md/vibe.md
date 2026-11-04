@@ -159,7 +159,7 @@ Check these first when the build or the live site fails.
 | --- | --- | --- | --- | --- |
 | Plain static HTML | Yes | Yes | Yes | Yes |
 | React, Vue, Svelte with Vite (single-page app) | Yes | Yes | Yes | Yes, with a routing workaround |
-| Next.js with server features (API routes, server rendering) | Yes, made by the Next.js team | Yes, through its Next.js support | Yes, through an adapter, with limits (check Cloudflare's current Next.js docs) | **No** |
+| Next.js with server features (API routes, server rendering) | Yes, made by the Next.js team | Yes, through its Next.js support | Not in this package: Cloudflare's current path for it runs on Workers, which this package does not cover yet | **No** |
 | Next.js static export (`output: 'export'`) | Yes | Yes | Yes | Yes |
 | Astro, SvelteKit, Nuxt, Gatsby | Yes | Yes | Yes | Static output only |
 

@@ -256,8 +256,8 @@ A custom domain is your own web address, such as `my-site.com`, instead of
 `<project>.vercel.app`. Adding a domain, changing DNS (the records that point a
 domain at a host), or buying a domain is outside the first deploy.
 Each one needs its own explicit yes, and buying a domain costs money. Do not do
-it as part of `deploy-frontend-launch` unless the user asks, and then follow
-Vercel's current domain documentation.
+it as part of `deploy-frontend-launch`. When the user asks, use
+`deploy-frontend-domain` together with Vercel's current domain documentation.
 
 ### When the build fails on Vercel
 

@@ -9,7 +9,9 @@ Last checked: 2026-11-04. Settings and rules were checked against GitHub's own
 documentation (the `content/pages` folder of the `github/docs` repository) on
 that date. The workflow below was checked against the published `action.yml` of
 `actions/configure-pages@v6`, `actions/upload-pages-artifact@v5`, and
-`actions/deploy-pages@v5`. It has not been run end to end by the vibe.md
+`actions/deploy-pages@v5`. The `v7` major tags of `actions/checkout` and
+`actions/setup-node` were confirmed to exist; their long-standing inputs used
+here were not re-read. It has not been run end to end by the vibe.md
 maintainers yet. Menu names on github.com change; if one is not where this guide
 says, look for the closest match and tell the user.
 
