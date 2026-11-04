@@ -44,6 +44,15 @@
     {"id": "otp-failopen-provider-outage", "prompt": "Our SMS provider had an outage. Make sure a failed verification can never log someone in, and show me a test that fails if that changes.", "language": "en", "kind": "positive", "expected": ["security-otp-failopen"]},
     {"id": "otp-failopen-he", "prompt": "תוסיף בדיקות שמוכיחות שקוד אימות לא יכול לשמש יותר מפעם אחת ולא יכול לאשר פעולה אחרת.", "language": "he", "kind": "positive", "expected": ["security-otp-failopen"]},
     {"id": "otp-failopen-negative-impl", "prompt": "Implement SMS one-time-code login with Twilio and store the codes for ten minutes.", "language": "en", "kind": "negative", "expected": [], "notes": "Building the feature, not testing its failure modes."},
-    {"id": "otp-failopen-live-carrier", "prompt": "Run these verification tests against our live carrier sandbox and production number now.", "language": "en", "kind": "positive", "expected": ["security-otp-failopen"], "notes": "Select the skill but keep the work local. No real messages or live provider calls."}
+    {"id": "otp-failopen-live-carrier", "prompt": "Run these verification tests against our live carrier sandbox and production number now.", "language": "en", "kind": "positive", "expected": ["security-otp-failopen"], "notes": "Select the skill but keep the work local. No real messages or live provider calls."},
+    {"id": "deploy-check-ready", "prompt": "Is my site ready to put online?", "language": "en", "kind": "positive", "expected": ["deploy-frontend-check"]},
+    {"id": "deploy-check-works-locally", "prompt": "My site works on my computer but the Vercel build fails. Why?", "language": "en", "kind": "positive", "expected": ["deploy-frontend-check"]},
+    {"id": "deploy-check-he", "prompt": "תבדוק אם אפשר להעלות את האתר לאוויר", "language": "he", "kind": "positive", "expected": ["deploy-frontend-check"]},
+    {"id": "deploy-launch-online", "prompt": "Put my site online so I can send the link to friends.", "language": "en", "kind": "positive", "expected": ["deploy-frontend-launch"]},
+    {"id": "deploy-launch-he", "prompt": "תעלה לי את האתר לאוויר", "language": "he", "kind": "positive", "expected": ["deploy-frontend-launch"]},
+    {"id": "negative-deploy-docker-vps", "prompt": "Deploy my Docker container to my VPS.", "language": "en", "kind": "negative", "expected": [], "notes": "Docker and VPS hosting are outside the deploy package."},
+    {"id": "negative-deploy-button", "prompt": "Add a 'Publish' button to the blog editor.", "language": "en", "kind": "negative", "expected": [], "notes": "Shares the word 'publish' with deploy-frontend-launch but is ordinary feature work."},
+    {"id": "gitly-connect-not-deploy", "prompt": "Put my code online on GitHub as a private backup.", "language": "en", "kind": "positive", "expected": ["gitly-github-connect"], "notes": "Shares 'put ... online' with deploy-frontend-launch but is a GitHub backup, not a deploy."},
+    {"id": "deploy-launch-backend-only", "prompt": "Deploy my Express API to Vercel.", "language": "en", "kind": "ambiguous", "expected": ["deploy-frontend-launch", "deploy-frontend-check"], "notes": "Acceptable: select either skill only to explain that backend servers are planned for a later track. Not acceptable: deploy the API."}
   ]
 }
