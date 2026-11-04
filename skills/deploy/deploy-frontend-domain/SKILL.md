@@ -93,7 +93,17 @@ Do not use this skill:
      requires it for a bare domain on Cloudflare Pages). This moves **all**
      records. Every existing record, especially MX and TXT, must be copied over
      first, or email stops. Recommend it only when the platform guide says it is
-     needed or the user prefers it.
+     needed or the user prefers it. Before a nameserver move:
+     - `dig` cannot list every record (for example `mail.`, `_dmarc`, DKIM,
+       SRV, or CAA records), so ask the user to open the full list of records in
+       their current DNS provider's dashboard (many can export it), and compare
+       it with what the new host imported before switching.
+     - Check DNSSEC with `dig +short DS <domain>`. If it prints anything, the
+       domain uses DNSSEC: the user must turn it off at the registrar and wait
+       before moving nameservers, or the whole domain, email included, can stop
+       working. It can be turned on again at the new provider afterwards.
+     - Suggest lowering the records' TTL (how long others remember them) a day
+       ahead, so a mistake can be undone faster.
 
 4. **Check costs and plans live.** Adding a custom domain is free on many free
    plans, but not always, and some features cost extra. Read the host's current
@@ -103,8 +113,9 @@ Do not use this skill:
 5. **Add the domain on the host first.** Ask before doing it. Follow the
    platform guide (dashboard, or the host's documented command if the guide
    lists one). The host then shows the exact records it wants. Use those exact
-   values; never use addresses from memory. On GitHub Pages, also verify the
-   domain in the user's GitHub settings to stop others from claiming it.
+   values; never use addresses from memory. On GitHub Pages, verify the domain
+   in the user's GitHub settings **before** adding it to the repository, to stop
+   others from claiming it.
 
 6. **The user changes the DNS records.** Give numbered steps for their DNS
    provider: which record type, which name (`@` usually means the bare domain),
@@ -133,7 +144,12 @@ Do not use this skill:
    Firebase authentication redirect URLs, or a Stripe domain list), remind the
    user to add the new domain there too.
 
-10. **Report.** The domain, what now points where, what was changed (and the old
+10. **When a domain is removed later**, or the site or project is deleted,
+    remove or change the DNS records that point at the old host first. A record
+    left pointing at a shared host address can let someone else take over the
+    domain.
+
+11. **Report.** The domain, what now points where, what was changed (and the old
     values, in case it needs undoing), HTTPS status, what you checked, and
     anything still waiting for DNS.
 

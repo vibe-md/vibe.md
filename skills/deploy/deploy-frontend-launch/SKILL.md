@@ -137,11 +137,16 @@ Do not use this skill:
    - On the CLI path, the names-only view the platform guide names (Vercel:
      `vercel env list`, never with `--json`). Netlify's CLI prints values, so
      check Netlify on the dashboard.
+   - On Cloudflare Pages with Wrangler, the site is built on this computer, so
+     dashboard build variables are not used: check the names in the local
+     `.env` files (names only), and ask the user to confirm the values are the
+     ones meant for the live site.
    Report names only.
 
 8. **Add a routing rule if needed.** If the check found a single-page app with
    client-side routes, propose the platform guide's fix (Vercel: a `vercel.json`
-   rewrite; Netlify: a `_redirects` file; Cloudflare Pages: usually nothing;
+   rewrite; Netlify: a `_redirects` file; Cloudflare Pages: usually nothing,
+   unless the build outputs a top-level `404.html`;
    GitHub Pages: a `404.html` copy or hash routing). On GitHub Pages, also set
    the base path for a project site. These are changes to the project, so ask
    first, and save them with `gitly-save` and push before a GitHub-connected
@@ -159,8 +164,10 @@ Do not use this skill:
     first if the user prefers). Before every CLI deploy, check the upload list
     for secret files as the platform guide describes (for Vercel,
     `vercel deploy --dry`, because the CLI does not follow `.gitignore`; for
-    Netlify and Cloudflare Pages, the names in the output folder), and never
-    deploy while one is listed. On GitHub Pages, the deploy is the workflow run
+    Netlify and Cloudflare Pages, the whole-folder check in
+    [FRONTEND.md](../FRONTEND.md) on the output folder), and never deploy while
+    one is listed. On GitHub Pages, run the same whole-folder check after a local
+    build before the first push. On GitHub Pages, the deploy is the workflow run
     started by the push. Do not add flags that skip confirmations or
     create bypass secrets (for Vercel, `--yes`, `--verify`). Once GitHub is
     connected, each push you make to the production branch is a production
@@ -186,7 +193,10 @@ Do not use this skill:
       script and style files it links to also load.
     - Open the key routes the user cares about directly, for example `/about`
       or `/login`, not only the home page. A 404 there in a single-page app
-      means the routing rule from step 8 is missing.
+      means the routing rule from step 8 is missing. The exception is GitHub
+      Pages with the `404.html` copy, where a 404 status is expected: check it
+      as the GitHub Pages guide's "Single-page app routing" says, and report
+      it as working in browsers but answering 404.
     - If a browser tool is available to you, open the page and look for errors
       in the console, especially failed calls to the outside services the site
       uses. If not, ask the user to open the address and try the main feature.

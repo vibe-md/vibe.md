@@ -110,8 +110,6 @@ publishes the build folder.
 
    permissions:
      contents: read
-     pages: write
-     id-token: write
 
    concurrency:
      group: pages
@@ -120,8 +118,13 @@ publishes the build folder.
    jobs:
      build:
        runs-on: ubuntu-latest
+       permissions:
+         contents: read
+         pages: read
        steps:
          - uses: actions/checkout@v7
+           with:
+             persist-credentials: false
          - uses: actions/setup-node@v7
            with:
              node-version: 22
@@ -136,6 +139,9 @@ publishes the build folder.
      deploy:
        needs: build
        runs-on: ubuntu-latest
+       permissions:
+         pages: write
+         id-token: write
        environment:
          name: github-pages
          url: ${{ steps.deployment.outputs.page_url }}
@@ -154,6 +160,16 @@ publishes the build folder.
      `.output/public`);
    - for a plain HTML site with no build, remove the `setup-node`, `npm ci`,
      and `npm run build` steps and set `path:` to the folder with `index.html`.
+     Never use `path: .` (the whole repository): every file in it would be
+     published, even from a private repository. If the site's files sit in the
+     repository root, move them into their own folder first, with the user's
+     agreement.
+
+   Only the `deploy` job gets permission to publish. The `build` job, which runs
+   the project's install scripts, can only read. Keep it that way. The actions
+   are pinned to major versions (`@v6`), which is simpler for beginners; a user
+   who wants stricter pinning can pin each action to a full commit SHA and let
+   Dependabot update them.
 4. **Save and push it.** Use `gitly-save`, then `gitly-sync`. The push starts
    the first deploy. Ask before pushing (it publishes the site).
 5. **Watch it.** On github.com, open the repository's **Actions** tab and the
@@ -165,9 +181,10 @@ site by itself. There are no automatic preview addresses for other branches.
 
 What gets uploaded: `upload-pages-artifact` packs only the folder in `path:`,
 and leaves out hidden files and folders (names starting with a dot) unless told
-otherwise. Never set `include-hidden-files: true`. Before the first deploy,
-list the names in the output folder (for example `ls -A dist`) and make sure no
-`.env*`, `*.pem`, `*.key`, or credentials file was copied into it.
+otherwise. Never set `include-hidden-files: true`. Other files in the folder,
+in any subfolder, are published. Before the first deploy, run the whole-folder
+check in [FRONTEND.md](FRONTEND.md) ("Checking the output folder for secret
+files") after a local build.
 
 ### Environment variables
 
@@ -214,6 +231,16 @@ app gives GitHub's 404 page. Two options, explain both and let the user choose:
 2. **Use hash-based routing** (`/#/about`) in the router. Every address loads
    `index.html` with status 200, at the cost of a `#` in the address.
 
+**Checking a direct route with the `404.html` copy.** The live check in
+[DEPLOY.md](DEPLOY.md), section 4, expects a success status, which this option
+can never give for inner routes. Do not treat that 404 as a failure and do not
+start fixing it. Instead, check that the 404 response is the app itself: its
+body has the same title and script tags as the home page's `index.html` (for
+example, compare `curl -sS "<url>/about"` with `curl -sS "<url>/"`), and, if you
+have a browser tool, that the route renders. Report it honestly as working in
+browsers but answering 404 to search engines and other tools, and offer hash
+routing if the user needs real 200s.
+
 Framework sites that build every page as its own file (Astro, Gatsby, a Next.js
 static export, `nuxt generate`) usually do not need either.
 
@@ -232,8 +259,11 @@ There is no "promote an older deployment" button. Two safe options:
 1. **Re-run the last good workflow run.** In the **Actions** tab, open the run
    of the last version that worked, and choose **Re-run all jobs**. A re-run uses
    the same commit as the original run, so it rebuilds and republishes that
-   version. The next push to the production branch publishes the newest code
-   again, so fix the problem before pushing.
+   version. Limits: it uses the repository variables as they are **now**, so it
+   does not undo a variable change; GitHub only allows re-running runs for a
+   limited time; and a newer run in progress can delay it. The next push to the
+   production branch publishes the newest code again, so fix the problem before
+   pushing.
 2. **Undo the change in Git** (for example with Gitly's `gitly-restore`), then
    push. This keeps the fix in the history and is the durable option.
 
@@ -244,8 +274,11 @@ Ask before either one: both change the live site.
 Adding a domain is its own step with its own yes, and buying one costs money.
 The steps below follow GitHub's documentation on the date above:
 
-- **Add the domain in GitHub first:** **Settings**, **Pages**, **Custom domain**,
-  type the domain, **Save**. With the Actions workflow, no `CNAME` file is needed.
+- **Verify the domain first**, in the user's GitHub account settings (Pages,
+  verified domains), so nobody else can claim it for their own Pages site.
+- **Then add the domain in the repository:** **Settings**, **Pages**, **Custom
+  domain**, type the domain, **Save**. With the Actions workflow, no `CNAME` file
+  is needed.
 - **A `www` or other subdomain** (`www.example.com`): at the domain's DNS
   provider, add a `CNAME` record pointing to `<user>.github.io` (without the
   repository name).
@@ -256,10 +289,10 @@ The steps below follow GitHub's documentation on the date above:
 - GitHub recommends setting up both `example.com` and `www.example.com`.
 - **Never use a wildcard record** such as `*.example.com`: GitHub warns it lets
   others take over subdomains.
-- **Verify the domain** in the user's GitHub account settings (Pages,
-  verified domains) to stop someone else claiming it.
 - After DNS works, tick **Enforce HTTPS** on the Pages settings screen. The
   certificate can take a while to appear.
+- **Before removing the domain or turning off Pages**, remove or change the DNS
+  records that point at GitHub, so nobody else can claim the address.
 
 The `deploy-frontend-domain` skill walks through this with the user.
 

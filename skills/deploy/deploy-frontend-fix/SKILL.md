@@ -111,6 +111,9 @@ Do not use this skill:
 
 8. **Verify.** Watch the new build to the end, then check the live site as in
    [DEPLOY.md](../DEPLOY.md), section 4, especially the thing that was broken.
+   On GitHub Pages with the `404.html` copy, inner routes answer 404 by
+   design; check them as the GitHub Pages guide's "Single-page app routing"
+   says, not as a failure.
 
 9. **Know when to stop.** If two fixes in a row did not work, stop changing
    things. Explain where things stand, what you ruled out, and what you would

@@ -122,10 +122,13 @@ Rules for these commands:
   with `wrangler whoami`. Tell the user the login stays saved on this computer
   until `wrangler logout`.
 - **Build first, then deploy only the output folder.** `wrangler pages deploy`
-  uploads the folder it is given. Run the build, then list the names in the
-  output folder (for example `ls -A dist`) and check them **by name only** for
-  `.env*`, `.dev.vars`, `*.pem`, `*.key`, `*credentials*`, and similar. Never
-  deploy the project root.
+  uploads the folder it is given, subfolders included. Run the build, then run
+  the whole-folder check in [FRONTEND.md](FRONTEND.md) ("Checking the output
+  folder for secret files"). Never deploy the project root.
+- **Confirm the project before every deploy.** Run
+  `wrangler pages project list` and confirm the exact project name with the
+  user. A misspelled name counts as a new project, which Wrangler may deploy to
+  Workers instead, publicly, without asking.
 - **Always pass `--project-name` and `--branch` explicitly**, after asking the
   user, so nothing is chosen for them. Passing the production branch publishes
   to the live site; get the user's yes for each production deploy.
@@ -133,6 +136,8 @@ Rules for these commands:
   `wrangler pages secret bulk` (it reads values from a file).
 - **Do not create projects with Wrangler** (`wrangler pages project create`);
   use the dashboard.
+- **Before deleting a project or removing a custom domain**, remove or change
+  the DNS records that point at it, so nobody else can claim the address.
 - **Deleting** (`wrangler pages project delete`,
   `wrangler pages deployment delete`, `wrangler pages secret delete`) always
   needs a separate, explicit yes.
@@ -143,9 +148,11 @@ Cloudflare Pages has two kinds, and it matters which one the site needs:
 
 - **Build-time variables** are read while the site is built. Public variables
   (`VITE_`, `NEXT_PUBLIC_`, `PUBLIC_`, and so on, see
-  [FRONTEND.md](FRONTEND.md)) are always this kind. The user adds them in the
-  dashboard: the project's **Settings**, **Variables and Secrets**, for
-  **Production** and **Preview** separately. They take effect on the next build.
+  [FRONTEND.md](FRONTEND.md)) are always this kind. For a Git-connected project
+  (Path A), the user adds them in the dashboard: the project's **Settings**,
+  **Variables and Secrets**, for **Production** and **Preview** separately.
+  They take effect on the next build. For Wrangler deploys (Path B), see the
+  paragraph below: the dashboard values are not used.
 - **Runtime secrets** are only for Pages Functions (server code in a
   `functions/` folder). The user adds them in the same dashboard screen as
   encrypted values, or in their own terminal with
@@ -155,27 +162,33 @@ Cloudflare Pages has two kinds, and it matters which one the site needs:
 Check the names with the user on the dashboard screen, or with
 `wrangler pages secret list` for runtime secrets. Report names only.
 
+With Wrangler (Path B), the site is built on the user's computer, so build-time
+values come from the local environment and `.env` files, not from the
+dashboard. Make sure the local values are the ones meant for the live site
+before deploying, and tell the user that dashboard build variables only apply to
+builds Cloudflare runs from Git. Check the local names only, with the names-only
+command in [DEPLOY.md](DEPLOY.md), and ask the user to confirm that values such
+as API addresses point at the live services, not `localhost`. After changing a
+value, build again locally and deploy again.
+
 ### Node.js version
 
 The build system reads the Node.js version from a `.nvmrc` or `.node-version`
 file, or from a `NODE_VERSION` variable in the project's settings. Make it match
-`engines.node`. Cloudflare moves projects to newer build images over time
-(older images are being retired during 2026 and 2027), which can change the
-default version, so setting it explicitly avoids surprises.
+`engines.node`. Cloudflare moves projects to newer build images over time (see
+its "Build image" page), which can change the default version, so setting it explicitly avoids surprises.
 
 ### Single-page app routing
 
 If the build output has **no top-level `404.html`**, Pages treats the site as a
 single-page app and serves the home page for any path that is not a file, so
 `/about` works without extra setup. If the output does have a `404.html`, Pages
-shows it for unknown paths instead; a single-page app then needs a `_redirects`
-file in the output folder:
-
-```text
-/*    /index.html   200
-```
-
-Adding it changes the project, so ask first.
+shows it for unknown paths instead, and the app's routes break. The fix is to
+stop the build from putting a `404.html` at the top of the output folder (find
+which file or setting creates it), so Pages goes back to single-page app mode.
+Do not add a `/*    /index.html   200` rule to `_redirects` for this: Cloudflare
+treats a wildcard rule to `/index.html` as an infinite loop and ignores it.
+Changing the build changes the project, so ask first.
 
 ### Production and preview, in plain words
 

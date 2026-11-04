@@ -98,19 +98,24 @@ Do not use this skill:
    Project configuration, Environment variables; Cloudflare Pages: Settings,
    Variables and Secrets; GitHub Pages: repository Settings, Secrets and
    variables, Actions, Variables). Where the host offers a prompt in the user's
-   own terminal that hides the value (Vercel `vercel env add <NAME>`,
+   own terminal (Vercel `vercel env add <NAME>`,
    Cloudflare `wrangler pages secret put <NAME>`), the user may run it
    themselves. Never ask for a value in the chat, never type one, and never put
    one on a command line. Mark real secrets as secret or sensitive when the host
    offers it. On GitHub Pages, also add each name to the workflow's build step
-   (`NAME: ${{ vars.NAME }}`), which is a project change: ask first.
+   (`NAME: ${{ vars.NAME }}`), which is a project change: ask first. On
+   Cloudflare Pages deployed with Wrangler, the build runs on this computer, so
+   public build-time values come from the local `.env` files, not the
+   dashboard: the user sets them there, and you check names only.
 
 8. **Check the names landed.** Repeat step 5 and confirm every needed name is in
    the right environments. Report names only.
 
 9. **Redeploy so the values take effect**, with the user's yes (a production
    deploy changes the live site): trigger a new deploy from the dashboard, push a
-   change, or use the host's deploy command, as the platform guide says.
+   change, or use the host's deploy command, as the platform guide says. For a
+   site built on this computer (Cloudflare Pages with Wrangler, or any CLI
+   deploy that builds locally), build again locally first.
 
 10. **Verify.** Check the live site as in [DEPLOY.md](../DEPLOY.md), section 4,
     focusing on the part that uses the settings: the page loads its data, the

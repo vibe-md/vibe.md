@@ -75,7 +75,9 @@ Do not use this skill:
    - **With the host's command-line tool:** Vercel `vercel deploy`; Netlify
      `netlify deploy` (a draft); Cloudflare Pages
      `wrangler pages deploy <dir> --project-name <name> --branch <preview-branch>`.
-     Check the upload list for secret files first, as the platform guide says.
+     Check the upload list for secret files first, as the platform guide says
+     (for Netlify and Cloudflare Pages, the whole-folder check in
+     [FRONTEND.md](../FRONTEND.md)).
    - **GitHub Pages** has no previews: check the change locally instead (for Vite,
      `npm run build` then `npm run preview`).
    A first preview is still a public address; ask before creating it.
@@ -101,7 +103,10 @@ Do not use this skill:
 
 7. **Check the live site.** As in [DEPLOY.md](../DEPLOY.md), section 4: the
    production address works, shows the new version (check something that
-   changed), and the main pages still open directly. If something broke, say so,
+   changed), and the main pages still open directly. On GitHub Pages with the `404.html` copy, inner routes answer 404 by
+   design; check them as the GitHub Pages guide's "Single-page app routing"
+   says, not as a failure.
+   If something broke, say so,
    and offer `deploy-frontend-rollback` to get visitors back to the working
    version while you investigate with `deploy-frontend-fix`.
 

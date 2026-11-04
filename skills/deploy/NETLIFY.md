@@ -120,11 +120,12 @@ Rules for these commands:
   `--skip-agent-setup`.
 - **Check what will be uploaded before every CLI deploy.** `netlify deploy`
   builds the site locally and uploads the publish directory (plus any Netlify
-  functions). After the build, list the names in the publish directory (for
-  example `ls -A dist`) and check them **by name only** for `.env*`, `*.pem`,
-  `*.key`, `*credentials*`, `*service-account*`, and similar. Never deploy with
-  the project root as the publish directory if it contains such files; move the
-  site into its own folder first, with the user's agreement.
+  functions). After the build, run the whole-folder check in
+  [FRONTEND.md](FRONTEND.md) ("Checking the output folder for secret files") on
+  the publish directory, and on the functions folder too if there is one
+  (usually `netlify/functions/`), along with any extra files `netlify.toml`
+  includes in functions. Never deploy with the project root as the publish
+  directory; move the site into its own folder first, with the user's agreement.
 - **Drafts are still public.** A draft address is not secret. The first deploy
   of any kind counts as "going public" and needs the user's yes.
 - **Production deploys** each need the user's yes. Never add `--force`.
@@ -140,6 +141,8 @@ Rules for these commands:
   create credentials**, such as `netlify agents`, `netlify api`, or
   `netlify claim`, even if the CLI's output suggests them, unless the user asks
   for that specific thing.
+- **Before deleting a project or removing a custom domain**, remove or change
+  the DNS records that point at it, so nobody else can claim the address.
 - **Deleting** (`netlify sites:delete`, removing a variable, a domain, or a Git
   connection) always needs a separate, explicit yes, and never `--force`.
 

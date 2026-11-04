@@ -153,6 +153,30 @@ Check these first when the build or the live site fails.
    build on lint or type errors that the local dev server only warns about. Run
    the real build command locally, not just the dev server.
 
+## Checking the output folder for secret files
+
+Whatever host builds or uploads the site, everything in the output folder,
+including subfolders, becomes public. Frameworks copy a `public/` or `static/`
+folder into the output as it is, so a key file placed there is published.
+Before the first deploy, and before every command-line deploy, check the whole
+output folder **by name only**, never opening the files, for example for `dist`:
+
+```bash
+find dist \( -name '.env*' ! -name '.env.example' -o -name '.dev.vars' \
+  -o -name '*.pem' -o -name '*.key' -o -name '*.p12' \
+  -o -iname '*credential*' -o -iname '*service-account*' \) -print
+```
+
+It should print nothing. If it lists a file, do not deploy: move the file out of
+the site's folders with the user's agreement, and if it was ever pushed or
+deployed, have the user replace the key at its provider (suggest
+`secret-guard`). Source maps (`*.map`) are not secrets, but they publish the
+original source code; mention them if the user wants their code private.
+
+Never publish the project root itself as the output folder. If a plain HTML site
+sits in the repository root, move it into its own folder (for example `site/`)
+first, with the user's agreement.
+
 ## Which platform fits which site
 
 | Site type | Vercel | Netlify | Cloudflare Pages | GitHub Pages |
