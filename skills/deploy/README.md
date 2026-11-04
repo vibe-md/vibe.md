@@ -37,15 +37,30 @@ If the check finds a backend server or a database the project needs to run, it
 tells you that part is planned for a later track and does not try to deploy it.
 
 The rules every track follows are in [DEPLOY.md](DEPLOY.md). Each hosting
-service has its own guide. This version includes [VERCEL.md](VERCEL.md).
-Guides for Netlify, Cloudflare Pages, and GitHub Pages are planned.
+service has its own guide:
+
+| Host | Good for | Guide |
+| --- | --- | --- |
+| Vercel | Next.js (including server features) and most other frameworks, with previews | [VERCEL.md](VERCEL.md) |
+| Netlify | Static sites, single-page apps, and Next.js, with previews | [NETLIFY.md](NETLIFY.md) |
+| Cloudflare Pages | Static sites and single-page apps, especially when the domain is already on Cloudflare | [CLOUDFLARE-PAGES.md](CLOUDFLARE-PAGES.md) |
+| GitHub Pages | Free, personal static sites straight from a GitHub repository; no server code and no secrets | [GITHUB-PAGES.md](GITHUB-PAGES.md) |
+
+Not sure which one? Ask "where should I host my site?" and the agent compares
+them for your project, reading each host's current prices and rules.
 
 ## Skills
 
 | Skill | What it does |
 | --- | --- |
 | `deploy-frontend-check` | Checks whether a site is ready to go online. It finds the framework (the toolkit your site is built with, such as React or Next.js) and runs the build on your computer. It lists the settings the site needs, by name only. It flags secrets in public settings, file names that differ only in capital letters, unsaved or unpushed work, and backend or database parts that are not covered yet. It does not edit your code or settings (the build only makes its usual output files), and ends with a plain ready or not-ready report. |
-| `deploy-frontend-launch` | Puts the site online for the first time on Vercel. It runs the check, helps you log in safely, and connects your GitHub repository (or uses the Vercel command-line tool, which you type commands into). It sets the settings, asks before going public, and deploys. It opens the live address and its main pages before saying it is done. |
+| `deploy-frontend-choose` | Helps you pick a host (Vercel, Netlify, Cloudflare Pages, or GitHub Pages) for this site. It checks whether the site needs server code or secrets, what you plan to use it for, and which accounts you already have, reads each host's current free-plan rules, and recommends one, with the reason. It changes nothing. |
+| `deploy-frontend-launch` | Puts the site online for the first time on any of the four hosts. It runs the check, helps you log in safely, and connects your GitHub repository (or uses the host's command-line tool, which you type commands into, or a GitHub Actions workflow for GitHub Pages). It sets the settings, asks before going public, and deploys. It opens the live address and its main pages before saying it is done. |
+| `deploy-frontend-env` | Puts the settings your site needs (environment variables) on the host safely. It explains public and secret settings, finds the names the site uses, and has you type each value into the host yourself, so no value ever passes through the chat. Then it redeploys and checks. |
+| `deploy-frontend-domain` | Connects your own domain (such as `my-site.com`). It looks at the domain's current settings first, explains each DNS record in plain words, protects your email settings, waits for the change to spread, and checks the padlock (HTTPS). It asks before every change and never buys anything. |
+| `deploy-frontend-update` | Publishes your later changes. It builds them, uses a test address (a preview) first where the host offers one, asks before changing the live site, and checks it afterwards. |
+| `deploy-frontend-fix` | Finds out why a deploy failed or the live site is broken, from the host's logs. It explains the cause in plain words, proposes the smallest fix, and asks before changing anything. |
+| `deploy-frontend-rollback` | Gets a broken live site back to the last version that worked, using the host's own rollback or Git, then checks the live address. It asks first and tells you what happens with your next update. |
 
 ## Related skills
 
@@ -53,6 +68,9 @@ Guides for Netlify, Cloudflare Pages, and GitHub Pages are planned.
   the Gitly package) set up Git, save your work, put it on GitHub, and keep it
   up to date there. Deploy hands off to them when your code is not saved or not
   on GitHub yet.
+- `gitly-branches`, `gitly-merge`, and `gitly-restore` make a test branch for a
+  preview, combine it when it is ready, and undo a bad change in Git. The update
+  and rollback skills hand off to them.
 - `secret-guard` keeps keys and passwords out of your repository. Use it when the
   check finds a secret in a file or in a public setting.
 
@@ -78,4 +96,4 @@ track or a hosting guide. In short: the repository tooling allows only one
 folder level inside a package, and every folder must be a skill, so a track is
 a guide file at the top level (such as `FRONTEND.md`) plus skills whose names
 start with `deploy-<track>-`. A hosting service gets one guide file (such as
-`VERCEL.md`) with one section per track.
+`VERCEL.md` or `GITHUB-PAGES.md`) with one section per track.

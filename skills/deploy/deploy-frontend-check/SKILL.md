@@ -1,6 +1,6 @@
 ---
 name: deploy-frontend-check
-description: Read-only check (edits no project files) of whether a website project is ready to go online. Detects the framework and package manager, runs the project's own build locally, finds the output folder and the environment variable names the code uses, and flags secrets in public variables, file-name case mismatches, unsaved or unpushed work, and backend or database parts that are out of scope. Ends with a plain ready or not-ready report. Use before a first deploy, or when the user asks "is my site ready to go online?", "can I deploy this?", "why does it work locally but not online?", "האתר מוכן לעלות לאוויר?", or "תבדוק אם אפשר להעלות את האתר". Not for actually deploying (use deploy-frontend-launch), not for backend servers or databases, and not for Docker or VPS hosting, which this package does not cover.
+description: Read-only check (edits no project files) of whether a website project is ready to go online. Detects the framework and package manager, runs the project's own build locally, finds the output folder and the environment variable names the code uses, and flags secrets in public variables, file-name case mismatches, unsaved or unpushed work, and backend or database parts that are out of scope. Ends with a plain ready or not-ready report. Use before a first deploy, or when the user asks "is my site ready to go online?", "can I deploy this?", "will this work online?", "האתר מוכן לעלות לאוויר?", or "תבדוק אם אפשר להעלות את האתר". Not for actually deploying (use deploy-frontend-launch), not for a build that already failed on the host (use deploy-frontend-fix), not for backend servers or databases, and not for Docker or VPS hosting, which this package does not cover.
 license: MIT
 compatibility: Needs read access to the project, Git, and the project's own tools (Node.js and its package manager for most sites). Runs the build locally, which writes build output, caches, and node_modules but no source files. Some frameworks send usage telemetry during builds. Installing missing dependencies needs network access and the user's approval. No hosting account is needed.
 metadata:
@@ -36,15 +36,17 @@ config file during the build (for example `next build` can update
 - Before the first deploy of a site, and as the first step of
   `deploy-frontend-launch`.
 - The user asks whether the site is ready to go online, or what is missing.
-- A deploy failed, or the site "works on my computer but not online", and the
-  user wants to know why.
+- The user worries the site will not work online and wants to find problems
+  before deploying, or before a big update.
 - Examples: "Is my site ready to put online?", "Check if I can deploy this",
-  "Why does my Vercel build fail?", "האתר מוכן לעלות לאוויר?", "תבדוק למה זה
-  עובד אצלי ולא באתר".
+  "Will this work once it's online?", "האתר מוכן לעלות לאוויר?", "תבדוק אם
+  אפשר להעלות את האתר".
 
 Do not use this skill:
 
 - to deploy. Use `deploy-frontend-launch`, which runs this check first.
+- when a deploy already failed on the host, or the live site is broken. Use
+  `deploy-frontend-fix`, which reads the host's logs.
 - to deploy a separate backend server or a database. This skill reports them
   as planned for later tracks and does not go further.
 - for Docker, VPS, or Kubernetes hosting. That is not this package.

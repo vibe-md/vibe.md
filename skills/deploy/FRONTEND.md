@@ -163,22 +163,23 @@ Check these first when the build or the live site fails.
 | Next.js static export (`output: 'export'`) | Yes | Yes | Yes | Yes |
 | Astro, SvelteKit, Nuxt, Gatsby | Yes | Yes | Yes | Static output only |
 
-- **Vercel**: the default choice in this version, and the best fit for Next.js.
+- **Vercel**: the best fit for Next.js, and a good default for most sites.
   Guide: [VERCEL.md](VERCEL.md).
-- **Netlify**: a similar experience, popular for static sites and forms. Guide
-  planned.
-- **Cloudflare Pages**: fast worldwide, generous with traffic; server features
-  run on Cloudflare's own runtime, which some packages do not support. Guide
-  planned.
-- **GitHub Pages**: free hosting straight from a GitHub repository, for static
-  sites only. It cannot run server code, so it cannot host server-rendered
-  Next.js. Guide planned.
+- **Netlify**: a similar experience, popular for static sites and forms, with
+  its own Next.js support. Guide: [NETLIFY.md](NETLIFY.md).
+- **Cloudflare Pages**: fast worldwide, generous with traffic, and a natural fit
+  when the domain is already on Cloudflare. Cloudflare now recommends its
+  Workers product for new projects and for server-rendered Next.js, which this
+  package does not cover yet. Guide: [CLOUDFLARE-PAGES.md](CLOUDFLARE-PAGES.md).
+- **GitHub Pages**: free hosting straight from a GitHub repository, for static,
+  non-commercial sites only. It cannot run server code or keep a secret, so it
+  cannot host server-rendered Next.js. Guide: [GITHUB-PAGES.md](GITHUB-PAGES.md).
 
 Whatever the platform, check its prices and terms live before recommending it
 (see [DEPLOY.md](DEPLOY.md)). Do not compare prices from memory.
 
-If the user has no preference, recommend Vercel in this version, because it is
-the only platform with a guide here yet. If they want another platform, say its
-guide is planned. If they still want it, follow that platform's official
-documentation, read live, under the rules in [DEPLOY.md](DEPLOY.md), and tell
-the user you are not using a vibe.md guide for it.
+If the user has no preference, use `deploy-frontend-choose` to compare the four
+hosts for this project. If they want a host without a guide here, follow that
+host's official documentation, read live, under the rules in
+[DEPLOY.md](DEPLOY.md), and tell the user you are not using a vibe.md guide for
+it.
