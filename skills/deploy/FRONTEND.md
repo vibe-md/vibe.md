@@ -153,32 +153,57 @@ Check these first when the build or the live site fails.
    build on lint or type errors that the local dev server only warns about. Run
    the real build command locally, not just the dev server.
 
+## Checking the output folder for secret files
+
+Whatever host builds or uploads the site, everything in the output folder,
+including subfolders, becomes public. Frameworks copy a `public/` or `static/`
+folder into the output as it is, so a key file placed there is published.
+Before the first deploy, and before every command-line deploy, check the whole
+output folder **by name only**, never opening the files, for example for `dist`:
+
+```bash
+find dist \( -name '.env*' ! -name '.env.example' -o -name '.dev.vars' \
+  -o -name '*.pem' -o -name '*.key' -o -name '*.p12' \
+  -o -iname '*credential*' -o -iname '*service-account*' \) -print
+```
+
+It should print nothing. If it lists a file, do not deploy: move the file out of
+the site's folders with the user's agreement, and if it was ever pushed or
+deployed, have the user replace the key at its provider (suggest
+`secret-guard`). Source maps (`*.map`) are not secrets, but they publish the
+original source code; mention them if the user wants their code private.
+
+Never publish the project root itself as the output folder. If a plain HTML site
+sits in the repository root, move it into its own folder (for example `site/`)
+first, with the user's agreement.
+
 ## Which platform fits which site
 
 | Site type | Vercel | Netlify | Cloudflare Pages | GitHub Pages |
 | --- | --- | --- | --- | --- |
 | Plain static HTML | Yes | Yes | Yes | Yes |
 | React, Vue, Svelte with Vite (single-page app) | Yes | Yes | Yes | Yes, with a routing workaround |
-| Next.js with server features (API routes, server rendering) | Yes, made by the Next.js team | Yes, through its Next.js support | Yes, through an adapter, with limits (check Cloudflare's current Next.js docs) | **No** |
+| Next.js with server features (API routes, server rendering) | Yes, made by the Next.js team | Yes, through its Next.js support | Not in this package: Cloudflare's current path for it runs on Workers, which this package does not cover yet | **No** |
 | Next.js static export (`output: 'export'`) | Yes | Yes | Yes | Yes |
 | Astro, SvelteKit, Nuxt, Gatsby | Yes | Yes | Yes | Static output only |
 
-- **Vercel**: the default choice in this version, and the best fit for Next.js.
+- **Vercel**: the best fit for Next.js, and a good default for most sites.
   Guide: [VERCEL.md](VERCEL.md).
-- **Netlify**: a similar experience, popular for static sites and forms. Guide
-  planned.
-- **Cloudflare Pages**: fast worldwide, generous with traffic; server features
-  run on Cloudflare's own runtime, which some packages do not support. Guide
-  planned.
-- **GitHub Pages**: free hosting straight from a GitHub repository, for static
-  sites only. It cannot run server code, so it cannot host server-rendered
-  Next.js. Guide planned.
+- **Netlify**: a similar experience, popular for static sites and forms, with
+  its own Next.js support. Guide: [NETLIFY.md](NETLIFY.md).
+- **Cloudflare Pages**: fast worldwide, generous with traffic, and a natural fit
+  when the domain is already on Cloudflare. Cloudflare now recommends its
+  Workers product for new projects and for server-rendered Next.js, which this
+  package does not cover yet. Guide: [CLOUDFLARE-PAGES.md](CLOUDFLARE-PAGES.md).
+- **GitHub Pages**: free hosting straight from a GitHub repository, for static,
+  non-commercial sites only. It cannot run server code or keep a secret, so it
+  cannot host server-rendered Next.js. Guide: [GITHUB-PAGES.md](GITHUB-PAGES.md).
 
 Whatever the platform, check its prices and terms live before recommending it
 (see [DEPLOY.md](DEPLOY.md)). Do not compare prices from memory.
 
-If the user has no preference, recommend Vercel in this version, because it is
-the only platform with a guide here yet. If they want another platform, say its
-guide is planned. If they still want it, follow that platform's official
-documentation, read live, under the rules in [DEPLOY.md](DEPLOY.md), and tell
-the user you are not using a vibe.md guide for it.
+If the user has no preference, use `deploy-frontend-choose` to compare the four
+hosts for this project. If they want a host without a guide here, follow that
+host's official documentation, read live, under the rules in
+[DEPLOY.md](DEPLOY.md), and tell the user you are not using a vibe.md guide for
+it.
