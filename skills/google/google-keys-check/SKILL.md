@@ -120,7 +120,7 @@ Do not use this skill:
      each key: its name, the last 4 characters of the key (they may press "Show
      key" on their own screen, and read you only those 4), its application
      restriction (None, Websites, IP addresses, Android, iOS) with the allowed
-     values, and its API restriction. Match keys to findings by the last 4
+     values, and its API restriction. With the read-back, match keys to findings by the last 4
      characters.
    - A key with no application restriction **and** no API restriction can be
      used by anyone who has it, for any API turned on in the project.
@@ -137,7 +137,7 @@ Do not use this skill:
    For each finding, give: where it is (file and line, or commit and file), the
    masked value or name, why it matters in one sentence, and the next step:
    - leaked secret: replace it as in [KEYS.md](../KEYS.md), "If a key leaked";
-     then `secret-guard` to clean history and stop it happening again;
+     then `secret-guard` to keep it out of Git from now on (it rewrites history only with the user's approval);
    - missing restriction: the skill for that key (`google-maps`,
      `google-firebase`, `google-gemini`, `google-sign-in`, `google-sheets`);
    - secret in the browser: move the call to server code (`google-gemini` or

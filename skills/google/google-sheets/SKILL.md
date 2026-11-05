@@ -39,6 +39,8 @@ Do not use this skill:
 - for a static site with no server code. The key cannot be hidden there.
   Suggest adding a serverless function first, or Google Forms.
 - to audit keys already in the project. Use `google-keys-check`.
+- to put the keys on the host. This skill names them; `deploy-frontend-env`
+  puts them on the host.
 
 ## Prerequisites
 
@@ -64,8 +66,13 @@ Do not use this skill:
    the **Service Accounts** page in the Google Cloud console: create one named
    for its job, such as "website-sheets". When the console offers to grant it
    roles on the project, **skip that**: it needs none to open a Sheet shared
-   with it. Official guide:
-   <https://cloud.google.com/iam/docs/service-accounts-create>.
+   with it. A role such as Editor would let its key change the whole project.
+   Official guide:
+   <https://cloud.google.com/iam/docs/service-accounts-create>. Verify: ask the
+   user to check the project's IAM page lists no role for the service account,
+   or, with `gcloud`, run the read-only
+   `gcloud projects get-iam-policy <PROJECT_ID> --flatten="bindings[].members" --filter="bindings.members:<SERVICE_ACCOUNT_EMAIL>" --format="value(bindings.role)"`,
+   which should print nothing.
    Its email looks like `website-sheets@<project-id>.iam.gserviceaccount.com`
    and is not a secret.
 
@@ -112,8 +119,9 @@ Do not use this skill:
      `=IMPORTXML(...)` as plain text, so it does not run in the Sheet. A value
      that starts with `=`, `+`, `-`, `@`, a tab or a line break can still run as
      a formula if the owner later downloads the Sheet and opens it in Excel, so
-     the route also refuses a field that starts with one of those (or removes
-     those characters from the start, if the user prefers).
+     for free-text fields the route removes those characters from the start of
+     the value. A phone field may keep a leading `+` followed only by digits and
+     spaces.
    - For reading: fetch on the server, and cache for a short time (for example
      a minute) so every page view is not a Sheets request. Show cell values as
      text, never as HTML, especially if visitors can write to the same Sheet.
@@ -122,8 +130,8 @@ Do not use this skill:
    Docs: <https://developers.google.com/sheets/api/guides/values>.
 
 7. **Test.** Run the dev server. For a form, with a yes (it writes to the
-   real Sheet), submit a test entry (marked "TEST") and ask the user to confirm the row appears, then delete it
-   themselves. For reading, check the page shows the Sheet's data. Also try one
+   real Sheet), submit a test entry (marked "TEST") and ask the user to confirm
+   the row appears, then delete it themselves. For reading, check the page shows the Sheet's data. Also try one
    bad submission and confirm it is rejected.
 
 8. **Live site.** Hand off to `deploy-frontend-env` to put the three names on

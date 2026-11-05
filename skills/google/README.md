@@ -60,7 +60,8 @@ Google keys, where each may live, and how to restrict them are in
   your hosting service for the live site. `deploy-frontend-domain` changes DNS
   records; Search Console verification follows its rules.
   `deploy-frontend-launch` puts the site online first.
-- `secret-guard` keeps keys out of Git and helps clean one out of the history.
+- `secret-guard` finds secrets and helps keep them out of Git. It changes Git
+  history only with your approval.
 - `security-agent-guard` (from the Security package) reviews an AI feature for
   security problems. `security-access-regression` checks who can see what after
   login.

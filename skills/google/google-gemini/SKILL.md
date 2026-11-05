@@ -47,7 +47,8 @@ Do not use this skill:
 - A Google account. Google AI Studio creates or links a Google Cloud project
   for the key.
 - For the paid tier: billing on that project and a budget alert
-  (`google-setup`).
+  (`google-setup`). A project with billing linked is on the paid tier for
+  every key in it; check this on the live pricing page.
 - Server code in the app.
 
 ## Instructions
@@ -67,8 +68,14 @@ Do not use this skill:
    so, masked. It must be replaced, not just moved ([KEYS.md](../KEYS.md), "If
    a key leaked"). Continue with a new key.
 
-3. **Get the key, typed by the user.** The user creates a key at
-   <https://aistudio.google.com/apikey> in the right project, and types it into
+3. **Pick the project, then get the key, typed by the user.** Before the user
+   creates the key, ask whether the project they will use has billing linked
+   (for example because Maps uses it). If it has, every Gemini request from that
+   key is charged at paid-tier prices from the first one: say so, confirm a
+   budget alert exists (`google-setup`), and get a yes for the paid tier. If
+   they want the free tier, use a project with no billing linked instead. Then
+   the user creates a key at
+   <https://aistudio.google.com/apikey> in that project, and types it into
    `.env.local` as `GEMINI_API_KEY` (no public prefix). Check `.gitignore` first
    and the name after. Never ask for the key in the chat.
 
@@ -82,7 +89,8 @@ Do not use this skill:
 5. **Budget and paid tier, only with a yes.** If the user wants the paid tier,
    check a budget alert exists first (`google-setup`), then the user turns on
    billing for the project in AI Studio or the console. Explain again: the
-   budget emails, it does not stop spending.
+   budget emails, it does not stop spending. Verify by having the user read back
+   the tier AI Studio shows for the key's project.
 
 6. **Add the server route, with a yes.** Show the plan, then:
    - Install the official SDK (`@google/genai` for JavaScript, `google-genai`
@@ -123,8 +131,9 @@ Do not use this skill:
    `generativelanguage.googleapis.com`, and the built browser files do not
    contain the Gemini key: run the masked search from `google-keys-check` step 4
    and compare the last 4 characters with the ones the user reads from AI
-   Studio (a Maps or Firebase key there is expected and different). Try one over-long message and one
-   burst over the rate limit, and confirm both are refused.
+   Studio (a Maps or Firebase key there is expected and different). Try one
+   over-long message and one burst over the rate limit, and confirm both are
+   refused.
 
 10. **Live site.** Hand off to `deploy-frontend-env` for `GEMINI_API_KEY` (as a
     secret) and the rate-limit store's settings on the host, deploy, and repeat

@@ -54,7 +54,14 @@ Do not use this skill:
    `GoogleAuthProvider`, or `@clerk/*`. If there is none, recommend one that
    fits what the app already uses (Supabase Auth if it uses Supabase, Firebase
    Auth if it uses Firebase, Auth.js for a plain Next.js app, Clerk if the user
-   wants a hosted login page), and ask before adding it.
+   wants a hosted login page), and ask before adding it. Clerk is a separate
+   paid service with a free tier: read its pricing page live before suggesting
+   it.
+   If the app uses the Google Identity Services button or One Tap
+   (`@react-oauth/google`, `accounts.google.com/gsi/client`), say this skill does
+   not cover it in detail: that flow needs only JavaScript origins (no redirect
+   URI), and the ID token it returns must be checked on the server before the
+   user is treated as logged in.
 
 2. **Make the list of addresses.** Write a table the user will copy from. Every
    value must match exactly: `http` versus `https`, `www` or not, the port, and
@@ -89,8 +96,8 @@ Do not use this skill:
    application** and paste the origins and redirect URIs from step 2. Google
    then shows a **client ID** and a **client secret**. Official guide:
    <https://developers.google.com/identity/protocols/oauth2/web-server#creatingcred>.
-   Tell the user Google shows the secret only at creation on newer projects,
-   so they should copy it straight to the next step.
+   Tell the user that for newly created clients Google may show the secret
+   only once, so they should copy it straight to the next step.
 
 5. **Put the ID and secret in the right place, typed by the user.** Ask before
    creating or editing any `.env` file, and check `.gitignore` covers it first.
@@ -130,7 +137,8 @@ Do not use this skill:
    itself is the user's. Then check the result from the app side where you can:
    for Auth.js, open `/api/auth/session` and confirm it shows a user (report
    the email only if the user is happy for you to); for Supabase or Firebase,
-   check the app shows the logged-in state. Have them log out and in again.
+   check the app shows the logged-in state; for Clerk, check its user button
+   shows the account. Have them log out and in again.
 
 8. **Test on the live site.** If the site is online, make sure the variables are
    on the host (hand off to `deploy-frontend-env`, and for Auth.js on hosts
@@ -144,7 +152,9 @@ Do not use this skill:
    ask; with a yes, they press **Publish app** on the Audience page. With only
    `openid`, `email` and `profile`, Google usually does not need a full review,
    but the console says if branding verification is needed. Read that screen
-   back with them.
+   back with them. Branding verification needs the authorized domains to be
+   verified in Search Console by a project owner or editor; hand off to
+   `google-search-console` for that.
 
 ## Fixing common errors
 

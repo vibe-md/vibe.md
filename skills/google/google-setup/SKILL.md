@@ -91,6 +91,10 @@ Do not use this skill:
    amounts), and ask. With a yes, the user links or creates a billing account on
    the project's Billing page. They enter card details on Google's page only.
    Official guide: <https://cloud.google.com/billing/docs/how-to/modify-project>.
+   Verify: ask them to read back that the project's Billing page shows the
+   billing account, or, with `gcloud`, run the read-only
+   `gcloud billing projects describe <PROJECT_ID>` and check
+   `billingEnabled: true`.
 
 5. **Set a budget with alerts.** Whenever billing is linked, before any paid API
    is turned on:

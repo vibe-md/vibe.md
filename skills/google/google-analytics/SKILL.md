@@ -27,12 +27,14 @@ arrives.
 - The user needs a cookie banner for analytics.
 - GA4 shows no data, or shows data before anyone agreed.
 - Examples: "Add Google Analytics to my site", "Add GA4 to my Next.js app", "How
-  many people visit my site?", "I need a cookie banner", "תוסיף גוגל אנליטיקס
+  many people visit my site?", "I need a cookie banner for analytics", "תוסיף גוגל אנליטיקס
   לאתר", "תוסיף באנר עוגיות".
 
 Do not use this skill:
 
 - for Google Ads conversion tracking or ad pixels.
+- to put the measurement ID on the host. This skill names it;
+  `deploy-frontend-env` puts it on the host.
 - for search rankings and indexing. Use `google-search-console`.
 - for legal advice. Say plainly this is not legal advice, and that a business
   with legal questions should ask a lawyer.
@@ -67,7 +69,10 @@ Do not use this skill:
    - Store the choice (for example in `localStorage` as `analytics-consent`),
      and do not show the banner again once chosen.
    - A "Cookie settings" link in the footer that shows the banner again, so the
-     visitor can change their mind.
+     visitor can change their mind. If they change Accept to Reject, call
+     `gtag('consent', 'update', { analytics_storage: 'denied' })`, delete the
+     `_ga` and `_ga_*` cookies, store the new choice, and do not load the tag on
+     later pages.
    - Accessible: a labelled region, buttons reachable by keyboard, visible
      focus, enough contrast in light and dark themes.
    Do not hide Reject, pre-tick anything, or block the page until a choice is

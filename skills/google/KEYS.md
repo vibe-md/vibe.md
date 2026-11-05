@@ -124,13 +124,13 @@ grep -rnoaE 'AIza[0-9A-Za-z_-]{35}' --exclude-dir=node_modules --exclude-dir=.gi
 OAuth client secrets, file and line number only:
 
 ```bash
-grep -rnIa --exclude-dir=node_modules --exclude-dir=.git --exclude='.env*' 'GOCSPX-' . | cut -d: -f1,2
+grep -rna --exclude-dir=node_modules --exclude-dir=.git --exclude='.env*' 'GOCSPX-' . | cut -d: -f1,2
 ```
 
 Service account keys and private keys, file names only:
 
 ```bash
-grep -rlIa --exclude-dir=node_modules --exclude-dir=.git --exclude='.env*' \
+grep -rla --exclude-dir=node_modules --exclude-dir=.git --exclude='.env*' \
   -e '"private_key"' -e '"type": *"service_account"' -e 'PRIVATE KEY' .
 ```
 
@@ -141,12 +141,21 @@ value's last 4 characters themselves if needed.
 
 ## If a key leaked
 
-A key that was committed to Git, deployed in a public setting, or pasted into a
-chat should be treated as known to others, even if the commit was removed.
+A **secret** (OAuth client secret, service account key, Gemini or other
+server key) that was committed to Git, deployed in a public setting, or pasted
+into a chat should be treated as known to others, even if the commit was
+removed. Always replace it.
+
+A **browser key** (Maps, Firebase web config) is public by design. If it was
+restricted to the user's websites and APIs all along, being in Git is fine: check
+the restrictions and stop there. Replace it only if it was unrestricted.
+
+To replace a key:
 
 1. Tell the user, masked, where it was found.
 2. With their yes, they create a new key with the same restrictions, put it in
    `.env` and on the host, and check that the app works.
 3. Then they delete the old key in the console. Deleting is their action, after
    a yes, because anything still using the old key stops working.
-4. Removing it from Git history is a separate job. Suggest `secret-guard`.
+4. Removing it from Git history is a separate job, and only with the user's
+   approval. Suggest `secret-guard`, which finds and contains secrets.

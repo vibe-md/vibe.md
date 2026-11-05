@@ -2,7 +2,7 @@
 name: google-firebase
 description: Adds Firebase to a web app safely, covering Firestore (the database), Cloud Storage (file uploads) and Firebase Hosting. Writes security rules that start closed and give each user only their own data (never allow-all or a "test mode" that expires), tests them on the Firebase emulator before anything goes live, restricts the web API key, and deploys rules or the site only with the user's yes. Explains which parts need the pay-as-you-go plan, from the live pricing page. Use when the user says "add Firebase", "set up Firestore", "my Firestore rules are in test mode", "Firebase says my database is insecure", "upload images to Firebase Storage", "deploy to Firebase Hosting", "תחבר את האפליקציה ל-Firebase", or "תכתוב לי חוקי אבטחה ל-Firestore". Not for Google login with Firebase Auth (use google-sign-in), not for hosting on Vercel, Netlify, Cloudflare Pages or GitHub Pages (use deploy-frontend-*), and not for Supabase.
 license: MIT
-compatibility: Needs read and write access to the project, Node.js, and network access. Uses the Firebase CLI (firebase-tools) through npx; the user logs in to it themselves. The emulator needs Java installed. A Firebase project, and for Storage the pay-as-you-go (Blaze) plan, which the user turns on only after a budget alert.
+compatibility: Needs read and write access to the project, Node.js, and network access. Uses the Firebase CLI (firebase-tools) through npx; the user logs in to it themselves. The emulator needs Java installed. A Firebase project, and for Storage or App Hosting the pay-as-you-go (Blaze) plan, which the user turns on only after a budget alert.
 metadata:
   collection: vibe.md
   group: google
@@ -46,9 +46,9 @@ Do not use this skill:
 - A Firebase project (create it in the Firebase console, or add Firebase to the
   Google Cloud project from `google-setup`).
 - Node.js. The emulator also needs Java; check with `java -version`.
-- For Cloud Storage: Firebase now asks for the pay-as-you-go **Blaze** plan for
-  new Storage buckets. Read <https://firebase.google.com/pricing> live and
-  confirm. Blaze needs billing, so set a budget alert first (`google-setup`).
+- For Cloud Storage: Cloud Storage for Firebase needs the pay-as-you-go
+  **Blaze** plan. Read <https://firebase.google.com/pricing> live and confirm.
+  Blaze needs billing, so set a budget alert first (`google-setup`).
 
 ## Instructions
 
@@ -60,7 +60,7 @@ Do not use this skill:
    words: "Should a user see only their own notes, or everyone's?"
 
 2. **Explain the plan and the cost.** Firestore and Hosting work on the no-cost
-   Spark plan within its limits; Storage for a new bucket needs Blaze. Read the
+   Spark plan within its limits; Cloud Storage needs Blaze. Read the
    pricing page live and tell the user what it says and the date. Ask before any
    plan change; the user makes it in the console after a budget alert exists.
 
@@ -71,9 +71,8 @@ Do not use this skill:
    Storage, Hosting, Emulators). Explain each question as it comes. When it asks
    whether to overwrite an existing file (such as `firestore.rules`,
    `storage.rules` or `firebase.json`), answer no unless the user says yes to
-   that specific file. If the
-   console asks for a Firestore location, explain that it cannot be changed
-   later, and pick one near the users.
+   that specific file. If the console asks for a Firestore location, explain
+   that it cannot be changed later, and pick one near the users.
 
 4. **Put the web config in environment variables.** The config is not secret,
    but keeping it in `.env` with the framework's public prefix
@@ -135,14 +134,17 @@ Do not use this skill:
    `storage` if used). Then
    check the rules shown in the console match the file.
 
-9. **Hosting, only if they want Firebase Hosting, with a yes.** Build the site,
-   check `firebase.json` points `public` at the build folder (`dist`, `out`,
-   `build`), and offer a preview first:
-   `npx firebase hosting:channel:deploy preview` gives a temporary address.
-   After the user checks it, and with a separate yes, deploy live with
-   `npx firebase deploy --only hosting --project <project-id>`. Open the live
-   address and its main
-   pages before saying it is done. Custom domains are added in the Firebase
+9. **Hosting, only if they want Firebase Hosting.** Firebase Hosting serves
+   static files only. If the app needs server code (for example a Next.js app
+   with server rendering or API routes), stop and explain: it needs Firebase App
+   Hosting, which needs Blaze, or a host from the deploy package
+   (`deploy-frontend-choose`). For a static site: build it, check
+   `firebase.json` points `public` at the build folder (`dist`, `out`, `build`),
+   and offer a preview first. A preview address is public, so ask; with a yes,
+   `npx firebase hosting:channel:deploy preview --project <project-id>` gives a
+   temporary address. After the user checks it, and with a separate yes, deploy
+   live with `npx firebase deploy --only hosting --project <project-id>`. Open
+   the live address and its main pages before saying it is done. Custom domains are added in the Firebase
    console; DNS changes follow `deploy-frontend-domain`'s rules.
 
 10. **Report.** What is set up, the rules in plain words ("each user can read and
@@ -163,7 +165,7 @@ checks the console.
 **User:** "תוסיף אפשרות להעלות תמונת פרופיל ל-Firebase Storage"
 
 **Agent:** Answers in Hebrew. Reads the pricing page and explains Storage needs
-the Blaze plan for new buckets; checks there is a budget alert and asks before
+the Blaze plan; checks there is a budget alert and asks before
 the user upgrades. Writes Storage rules allowing each user to write only
 `users/<their id>/avatar`, images under 5 MB, tests on the emulator, then
 deploys the rules after a yes.

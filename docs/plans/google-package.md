@@ -85,4 +85,4 @@ Categories: `Backend, Security, Frontend`.
 - `python3 scripts/build-packages.py --all --output-dir <tmp>` and `--verify <tmp>`
 - `bash scripts/install.sh --group google --agent claude-code --project <tmp> --dry-run`
 - `python3 scripts/check-contribution.py --base origin/main`
-- Reviews: security-reviewer (mandatory), skill-reviewer, docs-writer for the README.
+- Reviews: a security review (mandatory), a skill content review, and a plain-language docs pass on the README.

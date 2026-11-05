@@ -94,8 +94,9 @@ Do not use this skill:
      and `Map`), which Google's own docs point to. Docs:
      <https://visgl.github.io/react-google-maps/>.
    - Other sites: the loader from Google's docs, or `@googlemaps/js-api-loader`.
-   - Markers with custom styling need a **Map ID** (Advanced Markers). It is
-     created in the console and is not a secret.
+   - Markers use Advanced Markers (the older `Marker` is deprecated), which
+     always need a **Map ID**. It is created in the console and is not a
+     secret. For local work, Google's docs allow `DEMO_MAP_ID`.
    Give the map a fixed height in CSS; a map with no height shows nothing.
 
 6. **Add address autocomplete, with a yes.** Use the current Place Autocomplete
@@ -114,7 +115,8 @@ Do not use this skill:
    API has a requests-per-day quota they can set lower on its Quotas page, so a
    flood of traffic stops at that number instead of growing the bill. Ask for
    the number; the user sets it. Official guide:
-   <https://cloud.google.com/apis/docs/capping-api-usage>.
+   <https://cloud.google.com/apis/docs/capping-api-usage>. Verify: ask them to
+   read back the new value on the Quotas page.
 
 9. **Verify.** Run the dev server and open the page (with a browser tool if you
    have one, otherwise ask the user). Check the map or autocomplete shows, and
