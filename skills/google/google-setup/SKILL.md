@@ -106,7 +106,8 @@ Do not use this skill:
    - Verify: ask them to read back the budget name, amount, scope and alert
      levels. If they use `gcloud`, you can list budgets with
      `gcloud billing budgets list --billing-account=<BILLING_ACCOUNT_ID>`
-     (read-only; the billing account ID is not a secret).
+     (read-only; the billing account ID is not a secret). If `gcloud` offers to
+     enable an API to run it, answer no and use the read-back instead.
 
 6. **Turn on only the APIs the app needs.** List each one by its name in the API
    Library, for example "Maps JavaScript API", "Places API (New)", "Google Sheets

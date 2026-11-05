@@ -54,7 +54,10 @@ or busy key can run up a bill quickly.
   **masked**: the first 4 and last 4 characters only, such as `AIza...k3Qe`.
 - **Read `.env` files for names only, without opening them**, with a command
   such as
-  `sed -nE 's/^[[:space:]]*(export[[:space:]]+)?([A-Za-z_][A-Za-z0-9_]*)=.*/\2/p' .env`.
+  `sed -nE 's/^[[:space:]]*(export[[:space:]]+)?([A-Z_][A-Z0-9_]*)=.*/\2/p' .env`.
+  It accepts only upper-case names, so a line from inside a multi-line value
+  (such as part of a private key) is never printed. If a project uses
+  lower-case names, list them by hand with the user instead.
 - **No keys in code.** Code reads every key from an environment variable.
   Check that `.env` files are listed in `.gitignore` before anything is
   written to them.

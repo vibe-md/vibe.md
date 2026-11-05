@@ -48,7 +48,9 @@ Do not use this skill:
 ## Rules for this skill
 
 - Never print a full key, secret or private key. Use the masked form or the
-  variable name only ([KEYS.md](../KEYS.md), "Show a found key masked").
+  variable name only. Search only with the commands in [KEYS.md](../KEYS.md),
+  "Search for keys without printing them". A plain `grep -n` on these patterns
+  prints the whole secret.
 - Never open `.env` files; list names only ([GOOGLE.md](../GOOGLE.md),
   section 3).
 - Never call a Google API with a key you found to "test" it. A call can cost
@@ -67,13 +69,13 @@ Do not use this skill:
 
 2. **Search the current files.** From the project root, skipping
    `node_modules`, `.git` and other dependency folders:
-   - Google API keys (pattern `AIza[0-9A-Za-z_-]{35}`), printed masked with the
-     command in [KEYS.md](../KEYS.md).
-   - OAuth client secrets: lines containing `GOCSPX-`. Print the file and line
-     number only.
-   - Service account keys: files containing `"type": "service_account"` or
-     `"private_key"`, and file names such as `*service-account*.json`,
-     `client_secret*.json` or `credentials.json`. Print file names only.
+   Use the three commands in [KEYS.md](../KEYS.md), "Search for keys without
+   printing them", and no other form of `grep`:
+   - Google API keys (pattern `AIza[0-9A-Za-z_-]{35}`), masked.
+   - OAuth client secrets (`GOCSPX-`): file and line number only.
+   - Service account keys and private keys: file names only. Also look for
+     file names such as `*service-account*.json`, `client_secret*.json` or
+     `credentials.json` with `find`, without opening them.
    - Firebase mobile config files (`google-services.json`,
      `GoogleService-Info.plist`). These hold an API key that should be
      restricted; note them.
@@ -103,7 +105,8 @@ Do not use this skill:
      import `googleapis`, `google-auth-library`, `google-spreadsheet` or
      `@google/genai` with a key, or read a client secret.
    - If a build folder already exists (`.next/static`, `dist`, `build`, `out`),
-     search it for the same patterns. Anything there is sent to visitors.
+     search it with the same three commands, with the folder in place of `.`.
+     Anything there is sent to visitors.
      A Maps or Firebase key there is expected; a `GOCSPX-` secret, a private
      key or a Gemini key is not.
 
@@ -111,9 +114,11 @@ Do not use this skill:
    restricted ([KEYS.md](../KEYS.md), "Restrict every key").
    - If the user already uses `gcloud` and is logged in, ask for the project ID
      and run the list command from [KEYS.md](../KEYS.md). It does not print key
-     strings.
+     strings. If `gcloud` offers to enable an API, answer no: this skill changes
+     nothing.
    - Otherwise, ask the user to open the Credentials page and read back, for
-     each key: its name, the last 4 characters shown for it, its application
+     each key: its name, the last 4 characters of the key (they may press "Show
+     key" on their own screen, and read you only those 4), its application
      restriction (None, Websites, IP addresses, Android, iOS) with the allowed
      values, and its API restriction. Match keys to findings by the last 4
      characters.

@@ -64,7 +64,8 @@ Do not use this skill:
      `sitemap.xml` in the public folder.
    - Set the base address from one setting (for example `SITE_URL`), so
      previews never put their own address in the sitemap.
-   Deploy the change (`deploy-frontend-update`) and recheck step 1.
+   Then ask separately before putting it live, since that changes the live
+   site; with a yes, hand off to `deploy-frontend-update`, and recheck step 1.
 
 3. **Choose how to verify.** Explain the two kinds of property:
 
@@ -85,10 +86,10 @@ Do not use this skill:
      `nslookup -type=TXT my-site.com`) until the `google-site-verification=`
      value appears. The value is not a secret. DNS can take minutes to hours.
    - **Meta tag:** with a yes, add it to the home page's `<head>` through the
-     framework's metadata (in Next.js, `metadata.verification.google`), deploy,
-     and check the live HTML contains it.
-   - **HTML file:** put it in the public folder, deploy, and open it at the live
-     address.
+     framework's metadata (in Next.js, `metadata.verification.google`). With a
+     separate yes, deploy, and check the live HTML contains it.
+   - **HTML file:** with a yes, put it in the public folder. With a separate
+     yes, deploy, and open it at the live address.
    Then the user presses **Verify**. Ask them to read back the result.
    Leave the record, tag or file in place; removing it loses verification.
 

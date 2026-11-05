@@ -120,8 +120,10 @@ Do not use this skill:
 9. **Test.** Run the dev server and send one short request through the app's own
    page or route. Check the reply arrives, the browser's network list shows the
    call going to the app's route and **not** to
-   `generativelanguage.googleapis.com`, and the built browser files contain no
-   `AIza` key (`google-keys-check` step 4). Try one over-long message and one
+   `generativelanguage.googleapis.com`, and the built browser files do not
+   contain the Gemini key: run the masked search from `google-keys-check` step 4
+   and compare the last 4 characters with the ones the user reads from AI
+   Studio (a Maps or Firebase key there is expected and different). Try one over-long message and one
    burst over the rate limit, and confirm both are refused.
 
 10. **Live site.** Hand off to `deploy-frontend-env` for `GEMINI_API_KEY` (as a

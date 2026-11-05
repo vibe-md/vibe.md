@@ -95,20 +95,49 @@ gcloud services api-keys list --project=<PROJECT_ID> --format="yaml(displayName,
 A key with no `restrictions` block is unrestricted. A key with only
 `apiTargets` has an API restriction but no website or IP restriction.
 
+If `gcloud` says an API is not enabled and offers to enable it, answer **no**
+and use the read-back below instead. Turning on an API changes the project.
+Never add `--quiet` to these commands, which answers such questions for you.
+
 Do not install `gcloud` or log the user in just for this, unless they ask. The
 other way is to have the user open the Credentials page and read back, for each
 key, its name, its application restriction type, the allowed sites, and the
-allowed APIs. Never the key itself.
+allowed APIs. To match a key to a finding, they may press "Show key" on their
+own screen and read you **only the last 4 characters**. Never the whole key.
 
-## Show a found key masked
+## Search for keys without printing them
 
-When you must point at a key in a file, print only its first and last 4
-characters, for example:
+A plain `grep -n` prints the whole line, and with it the whole secret. Minified
+build files put everything on one line, so it can print every secret in the
+file. Use only these forms: `-o` with the masking `sed`, or `-l` (file names
+only), or `cut` to keep only the file and line number. Never run `grep` on these
+patterns in any other form, and never `cat` or open a file that matched.
+
+API keys, masked to `AIza` and the last 4 characters (`-a` also searches
+minified files; `-o` keeps the output to the match itself):
 
 ```bash
-grep -rnoE 'AIza[0-9A-Za-z_-]{35}' --exclude-dir=node_modules --exclude-dir=.git . \
+grep -rnoaE 'AIza[0-9A-Za-z_-]{35}' --exclude-dir=node_modules --exclude-dir=.git --exclude='.env*' . \
   | sed -E 's/(AIza)[0-9A-Za-z_-]{31}([0-9A-Za-z_-]{4})/\1...\2/'
 ```
+
+OAuth client secrets, file and line number only:
+
+```bash
+grep -rnIa --exclude-dir=node_modules --exclude-dir=.git --exclude='.env*' 'GOCSPX-' . | cut -d: -f1,2
+```
+
+Service account keys and private keys, file names only:
+
+```bash
+grep -rlIa --exclude-dir=node_modules --exclude-dir=.git --exclude='.env*' \
+  -e '"private_key"' -e '"type": *"service_account"' -e 'PRIVATE KEY' .
+```
+
+To search a build folder, run the same commands with the folder (for example
+`.next/static` or `dist`) in place of `.`. `.env` files are left out: list their
+names only ([GOOGLE.md](GOOGLE.md), section 3), and ask the user to check a
+value's last 4 characters themselves if needed.
 
 ## If a key leaked
 

@@ -69,12 +69,15 @@ Do not use this skill:
    Its email looks like `website-sheets@<project-id>.iam.gserviceaccount.com`
    and is not a secret.
 
-4. **Share only that one Sheet with it.** The user opens the Sheet, presses
-   Share, and adds the service account email:
+4. **Share only that one Sheet with it.** For a form, use a Sheet that holds
+   only the form's rows, not one with other business data, because a robot
+   with Editor access can change or clear everything in it. The user opens the
+   Sheet, presses Share, and adds the service account email:
    - **Viewer** if the site only reads.
    - **Editor** if the site writes.
-   Turn off "Notify people". Do not make the Sheet "Anyone with the link" just
-   for this.
+   Turn off "Notify people". In the Share settings, also turn off "Editors can
+   change permissions and share", so the robot cannot share the Sheet onward.
+   Do not make the Sheet "Anyone with the link" just for this.
 
 5. **Create the key and put it in `.env`, typed by the user.** Explain that this
    key lets anyone who has it act as the robot. With a yes:
@@ -106,16 +109,20 @@ Do not use this skill:
      a few submissions per minute per IP), and a hidden "honeypot" field to stop
      simple bots. Append with `valueInputOption: "RAW"`, never
      `"USER_ENTERED"`: with `RAW`, Google stores a value such as
-     `=IMPORTXML(...)` as plain text, so a visitor cannot plant a formula in
-     the owner's Sheet.
+     `=IMPORTXML(...)` as plain text, so it does not run in the Sheet. A value
+     that starts with `=`, `+`, `-`, `@`, a tab or a line break can still run as
+     a formula if the owner later downloads the Sheet and opens it in Excel, so
+     the route also refuses a field that starts with one of those (or removes
+     those characters from the start, if the user prefers).
    - For reading: fetch on the server, and cache for a short time (for example
-     a minute) so every page view is not a Sheets request.
+     a minute) so every page view is not a Sheets request. Show cell values as
+     text, never as HTML, especially if visitors can write to the same Sheet.
    - Errors: log a short message on the server, never the key, and show the
      visitor a plain "Something went wrong, please try again".
    Docs: <https://developers.google.com/sheets/api/guides/values>.
 
-7. **Test.** Run the dev server. For a form, submit a test entry (marked
-   "TEST") and ask the user to confirm the row appears, then delete it
+7. **Test.** Run the dev server. For a form, with a yes (it writes to the
+   real Sheet), submit a test entry (marked "TEST") and ask the user to confirm the row appears, then delete it
    themselves. For reading, check the page shows the Sheet's data. Also try one
    bad submission and confirm it is rejected.
 

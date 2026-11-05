@@ -68,7 +68,10 @@ Do not use this skill:
    (`npm install --save-dev firebase-tools`), so it runs with `npx firebase`.
    The user runs `npx firebase login` in their own terminal; it opens a browser.
    Then, with a yes, `npx firebase init` for only the parts needed (Firestore,
-   Storage, Hosting, Emulators). Explain each question as it comes. If the
+   Storage, Hosting, Emulators). Explain each question as it comes. When it asks
+   whether to overwrite an existing file (such as `firestore.rules`,
+   `storage.rules` or `firebase.json`), answer no unless the user says yes to
+   that specific file. If the
    console asks for a Firestore location, explain that it cannot be changed
    later, and pick one near the users.
 
@@ -79,7 +82,9 @@ Do not use this skill:
 
 5. **Restrict the web API key.** On the Credentials page of the same Google Cloud
    project, the key Firebase made ("Browser key (auto created by Firebase)")
-   should be restricted to the user's websites (live domain, the
+   should be restricted, if it is used only by this web app (an Android or iOS
+   app sharing the same key would stop working; give those their own keys), to
+   the user's websites (live domain, the
    `<project-id>.web.app` and `<project-id>.firebaseapp.com` addresses if
    Hosting is used, and `localhost`), and to the APIs Firebase uses. Follow
    Firebase's own list, since some Firebase features need their API on the key:
@@ -122,9 +127,12 @@ Do not use this skill:
      Docs: <https://firebase.google.com/docs/rules/unit-tests>.
    Do not go on until the "cannot" tests pass.
 
-8. **Deploy the rules, with a yes.** Explain that this changes the live
-   database's rules at once. With a yes:
-   `npx firebase deploy --only firestore:rules` (and `storage` if used). Then
+8. **Deploy the rules, with a yes.** First run `npx firebase use` (read-only) to
+   see which project is active, because users with a test and a live project can
+   overwrite the wrong one. Explain that this changes that project's live rules
+   at once, naming the project ID. With a yes:
+   `npx firebase deploy --only firestore:rules --project <project-id>` (and
+   `storage` if used). Then
    check the rules shown in the console match the file.
 
 9. **Hosting, only if they want Firebase Hosting, with a yes.** Build the site,
@@ -132,7 +140,8 @@ Do not use this skill:
    `build`), and offer a preview first:
    `npx firebase hosting:channel:deploy preview` gives a temporary address.
    After the user checks it, and with a separate yes, deploy live with
-   `npx firebase deploy --only hosting`. Open the live address and its main
+   `npx firebase deploy --only hosting --project <project-id>`. Open the live
+   address and its main
    pages before saying it is done. Custom domains are added in the Firebase
    console; DNS changes follow `deploy-frontend-domain`'s rules.
 
