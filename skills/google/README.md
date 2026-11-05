@@ -1,11 +1,13 @@
 ---
-title: Google
-summary: Add Google services to your website or app, such as login, maps, Firebase, analytics, search, Sheets and Gemini, with keys locked down and limits that help you avoid surprise bills.
+title: Google services
+summary: Unofficial. Add Google login, maps, Firebase, analytics, Search Console, Sheets and Gemini to your site, with restricted keys and budget alerts.
 categories: Backend, Security, Frontend
 maintainers: [NirGeron98, AdiBer1]
 ---
 
-# Google
+# Google services
+
+**Unofficial:** vibe.md is not made by or affiliated with Google.
 
 You built a site or app with an AI tool, and now you want "Log in with Google",
 a map, a database, visitor stats, a spot in Google Search, a Google Sheet, or
