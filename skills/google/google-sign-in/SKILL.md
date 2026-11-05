@@ -80,7 +80,7 @@ Do not use this skill:
      for now.
    - **Data access (scopes):** only `openid`, `email` and `profile`. Asking for
      more (Gmail, Drive) needs Google's review, which takes weeks.
-   Official guide: <https://support.google.com/cloud/answer/15544987>.
+   Official guide: <https://developers.google.com/workspace/guides/configure-oauth-consent>.
    For Firebase Auth and Clerk development instances, this screen is created
    for them; still check the app name and support email.
 
