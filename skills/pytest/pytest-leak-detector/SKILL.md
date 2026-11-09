@@ -1,60 +1,88 @@
 ---
 name: pytest-leak-detector
-description: Use when writing, refactoring, or running pytest tests to audit fixture teardown and identify leftover test files or processes.
+description: Audits pytest fixtures for reliable resource teardown and finds likely leftover test artifacts. Use when writing or reviewing pytest fixtures, running Python tests, or checking for temporary files after a test run.
+license: MIT
 metadata:
   categories: Testing
   maintainers: shir-exe
   group: pytest
+  title: Pytest Leak Detector
 ---
 
 # Pytest Leak Detector
 
+## Purpose
+
+Help prevent pytest fixtures from leaking resources or leaving test artifacts in a project.
+
 ## When to Use
-Use this skill whenever writing, refactoring, or running Python tests with `pytest`, or when creating test fixtures and mock setups.
+
+Use this skill when:
+- Writing or reviewing pytest fixtures, especially fixtures that open files or manage external resources.
+- Running Python tests with pytest and checking for leftover test artifacts.
+
+Do not use it as a general-purpose filesystem cleanup tool or as proof that a flagged file is a leak.
 
 ## Prerequisites
-- Python 3.9 or later to run the bundled leak-check script.
+
+- Python 3.9 or later to run the bundled artifact scanner.
+- pytest to run the project's tests.
+- The scanner uses only the Python standard library.
 
 ## Instructions
 
-### 1. Fixture & Resource Audit
-When creating or reviewing fixtures, enforce the following patterns:
-- **Teardown Guarantee**: Ensure resource-managing fixtures use `yield` instead of `return`. For complex setups, prefer `try...finally` or `request.addfinalizer()` to guarantee cleanup execution even if setup steps fail mid-process.
-- **Built-in Temp Storage**: Enforce using pytest's built-in `tmp_path` fixture for filesystem operations instead of creating ad-hoc local files or directories within the project root.
-- **Explicit Closure**: Verify that external resources (HTTP sessions, DB connections, sockets, Docker containers) have explicit termination calls (`.close()`, `.stop()`) in their teardown block following `yield`.
-- **Scope Verification**: Choose fixture scope intentionally. Prefer function scope for isolation; use broader scopes only when sharing state is safe and intended.
+### 1. Audit fixtures and resources
 
-### 2. Post-Test Leak Detection & Script Execution
-- After executing `pytest`, run the [bundled leak-check script](scripts/check_leaks.py) from the project directory. It reports files that match common temporary-artifact names; these are candidates, not proof of a leak.
-- Check for leftover test processes separately. Confirm that a process belongs to this test run before considering it for termination.
+- Resource-managing fixtures should use `yield` so teardown runs after the test. For complex setup, use `try...finally` or register `request.addfinalizer()` immediately after acquiring a resource, so cleanup is also covered if later setup fails.
+- Use pytest's `tmp_path` fixture for files and directories instead of creating temporary files in the project.
+- Explicitly close or stop external resources, such as HTTP sessions, database connections, sockets, and containers, in fixture teardown.
+- Prefer function-scoped fixtures for isolation. Use broader scopes only when sharing state is intentional and safe.
 
-### 3. Interactive Clean-up & Approval
-- Present a concise, itemized report of detected file candidates and any test-related processes to the user.
-- **Never auto-delete files or terminate processes without explicit permission.** Always ask:
-  > *"The test run left behind the following artifacts: [List]. Would you like me to clean them up?"*
-- Upon receiving approval, pass only the exact file paths the user approved to the script, using one `--path` option per file:
-  `python3 /path/to/pytest-leak-detector/scripts/check_leaks.py --workspace . --clean --path path/to/approved.tmp`
-- If the user approves stopping a process, stop only the specifically identified process and report the result. Never stop processes based only on their name.
+For example:
 
-## Examples
-
-### User Prompt:
-"Write a pytest fixture that creates a temporary config file and connects to a test DB."
-
-### Agent Action (Using this skill):
 ```python
 import pytest
 
+
 @pytest.fixture
-def db_config(tmp_path):
-    # Uses built-in tmp_path instead of creating files in the project root
-    config_file = tmp_path / "config.json"
-    config_file.write_text('{"db": "test"}')
-
-    db_conn = start_test_db()
-
-    yield db_conn, config_file
-
-    # Teardown: explicitly close connection
-    db_conn.close()
+def output_file(tmp_path):
+    path = tmp_path / "output.txt"
+    with path.open("w", encoding="utf-8") as file:
+        yield file
 ```
+
+The context manager closes the file when pytest resumes the fixture after the test.
+
+### 2. Run tests and scan for artifacts
+
+1. Run the relevant pytest command from the project root.
+2. Locate this skill's bundled `scripts/check_leaks.py` and run it with Python 3.9 or later, setting `--workspace` to the project root. For example:
+
+   ```text
+   python3 <skill-directory>/scripts/check_leaks.py --workspace <project-root>
+   ```
+
+   Replace both placeholders with the actual paths. The scanner checks files outside common environment and cache directories for suspicious extensions (`.db`, `.sqlite`, `.log`, `.tmp`) and prefixes (`temp_`, `test_out_`, `dump_`).
+3. Report every candidate by its relative path. A match is only a candidate, not proof that the test run created it; it may be intentional or pre-existing. The scanner exits with status 1 when it finds candidates.
+4. If needed, separately inspect running processes using read-only process information. Verify a process belongs to this test run before discussing it; never terminate a process without the user's explicit approval.
+
+### 3. Ask before cleanup
+
+- Never delete detected files automatically. Show the exact candidate paths and ask the user whether they want them cleaned up.
+- Only after approval, pass each approved, currently detected relative path with its own `--path` option and `--clean`:
+
+  ```text
+  python3 <skill-directory>/scripts/check_leaks.py --workspace <project-root> --clean --path path/to/approved.tmp
+  ```
+
+- Do not add unapproved paths or broaden the cleanup. If the user approves stopping a process, stop only the specifically identified process and report the result.
+
+## Examples
+
+**User:** "Can you check whether my pytest fixtures close their files?"
+
+**Agent:** Reviews the fixtures for `yield`-based teardown, explicit closure, and use of `tmp_path`; reports any concrete issues and suggests a focused fix.
+
+**User:** "Run the tests and check for leftover files."
+
+**Agent:** Runs the project's pytest command, scans the project root with the bundled script, reports the exact candidate paths and any relevant processes, then asks before cleaning anything.
