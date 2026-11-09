@@ -4,6 +4,7 @@
 
 ## Type of change
 
+- [ ] New standalone skill
 - [ ] New skill in an existing package
 - [ ] New package
 - [ ] Improvement to an existing skill
