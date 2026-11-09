@@ -4,6 +4,7 @@ description: Use when writing, refactoring, or running pytest tests to audit fix
 metadata:
   categories: Testing
   maintainers: shir-exe
+  group: pytest
 ---
 
 # Pytest Leak Detector
