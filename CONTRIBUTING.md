@@ -92,6 +92,7 @@ vibe.md/
 ├── evals/                     # Natural-language scenarios for checking skill selection
 ├── tests/                     # Validator, installer, lifecycle, packaging, and catalog tests
 ├── docs/skill-contribution-check/SKILL.md  # How agents check a skill before a PR (not a published skill)
+├── docs/skill-contribution-check/pr_link.py  # Builds the filled-in Pull Request link for that check
 ├── AGENTS.md, CLAUDE.md       # Tell coding agents to run that check (never published)
 └── .github/
     ├── workflows/validate-skills.yml   # Runs on every Pull Request
@@ -404,7 +405,7 @@ In a fork, add vibe.md as `upstream` once: `git remote add upstream https://gith
 1. Create a branch: `git checkout -b add-release-notes-skill`.
 2. Commit your changes with a clear message, for example `Add release-notes skill`.
 3. Push to your fork and open a Pull Request against `main`.
-4. Fill in the Pull Request template checklist. Your agent can draft it for you when it [checks your skill](#check-your-skill).
+4. Fill in the Pull Request template checklist. When your agent [checks your skill](#check-your-skill), it can fill in the template for you. It ticks only what it checked or you confirmed. It can also give you a link that opens the Pull Request with the description filled in.
 5. Wait for CI. The **Validate skills** workflow runs the validator, builds every package and the catalog, and runs the full test suite on Linux and macOS. If it fails, open the failed job; validation errors are also shown inline on the changed files. The **Contribution check** job adds a plain-language report to the job summary. It fails only on clear problems, such as validator errors, hidden characters, or secrets. Everything else is a warning to look at. The first time you contribute, a maintainer has to approve the workflow run before it starts.
 6. Respond to review feedback by pushing more commits to the same branch. New commits require a fresh approval.
 7. A maintainer merges the Pull Request once CI passes and the review is approved. **Contributors cannot merge their own Pull Requests.**
