@@ -74,6 +74,8 @@ python3 scripts/validate-skills.py
 python3 -m unittest discover -s tests
 ```
 
+On Windows, or for every command per system, see [docs/COMMANDS.md](docs/COMMANDS.md).
+
 ## Repository architecture
 
 ```text
