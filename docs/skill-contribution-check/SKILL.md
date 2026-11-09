@@ -96,7 +96,16 @@ The rules live in the repository, not here, so read them every time.
 
    b. **Copy the template exactly.** Start from `.github/PULL_REQUEST_TEMPLATE.md` as it is today. Keep every `##` heading and every checkbox line word for word, because `scripts/check-contribution.py` reads them. Replace the `<!-- ... -->` hints with your text.
       - **Summary:** two to four sentences in your own words, from the skill's `description` and the diff: what it adds or changes, and why. Never copy text that step 6 flagged.
-      - **Type of change:** tick the line that matches the diff from step 2: a new skill folder in an existing package, a new package (a new `skills/<package>/README.md`, or a new standalone skill, which is published as a package of one skill), or changes to an existing skill. Tick "Documentation" or "Other" only for those.
+      - **Type of change:** tick the one line that matches the diff from step 2:
+
+        | Line | The diff adds or changes |
+        | --- | --- |
+        | New standalone skill | A new folder `skills/<skill-name>/` with its own `SKILL.md` and no package `README.md`. |
+        | New skill in an existing package | A new folder `skills/<package>/<package>-<skill>/` with a `SKILL.md`, inside a package that already has its `README.md` on `main`. |
+        | New package | A new folder `skills/<package>/` with a `README.md` and one or more skill folders inside it. |
+        | Improvement to an existing skill | Changes to a `SKILL.md` or files of a skill that already exists on `main`. |
+
+        Tick "Installer, validator, or CI", "Documentation" or "Other" only for those.
       - **Skill checklist:** if no file under `skills/` changed, delete the whole section, as the template says.
 
    c. **Tick a box only with evidence from this run.** Keep this map:
@@ -105,7 +114,7 @@ The rules live in the repository, not here, so read them every time.
       | --- | --- |
       | Valid YAML frontmatter with `name` and `description` | `validate-skills.py` passed in step 3. |
       | Name unique, kebab-case, matches the folder, package prefix | `validate-skills.py` passed with no prefix warning for this skill. |
-      | New package README | A new package with a `README.md` was added and passed the validator. Otherwise leave it empty and note why, such as "standalone skill, no package README" or "not a new package". |
+      | New package README | You ticked "New package" above, and its `README.md` passed the validator. Otherwise leave it empty and note why, such as "standalone skill, no package README" or "not a new package". |
       | Description says what and when | Step 5 found no problem with the description. |
       | Resources and relative links | `validate-skills.py` passed (it checks links). |
       | Prerequisites documented | Step 5: you read `SKILL.md` and its needs (tools, accounts, network) are written there, or it needs none. |
@@ -113,7 +122,7 @@ The rules live in the repository, not here, so read them every time.
       | Bundled scripts | The skill has no `scripts/` folder, or step 6 read each script and it does only what `SKILL.md` says. |
       | Tested with a coding agent | The user named at least one agent in 9a. |
       | Existing skills unaffected | Step 4 found no change outside the skill's folder (and `evals/scenarios.json`), and the tests passed in step 3. |
-      | Third-party material | The user's answer in 9a. |
+      | Third-party material | The user's answer in 9a. If they said there is none, also add "No third-party material." to Notes for reviewers. |
       | Checked with this skill | You ran steps 1 to 8 now. |
       | `validate-skills.py` passes | It exited with no errors in step 3. |
       | `unittest` passes | The tests ran in step 3 in this session and passed. Not if they were skipped or still running. |
