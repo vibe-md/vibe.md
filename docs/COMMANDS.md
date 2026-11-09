@@ -44,7 +44,7 @@ python3 --version
 
 ### Windows
 
-Git for Windows includes Git Bash. Open a new terminal after you install. Use the `py` launcher on Windows. `python3` may open the Microsoft Store instead. You can also download Python from [python.org](https://www.python.org/downloads/windows/).
+Git for Windows includes Git Bash, but not Python, so install both. Open a new terminal after you install. Use the `py` launcher on Windows. `python3` may open the Microsoft Store instead. You can also download Python from [python.org](https://www.python.org/downloads/windows/).
 
 ```powershell
 winget install --id Git.Git -e
@@ -256,7 +256,7 @@ bash scripts/install.sh --skill <skill-name> --agent claude-code --project /tmp/
 
 | Step | PowerShell | Git Bash | WSL |
 | --- | --- | --- | --- |
-| Install Git and Python | Yes (`winget`) | Not needed (comes with Git) | Yes (Linux commands) |
+| Install Git and Python | Yes (`winget`) | Git Bash comes with Git. Install Python separately, from PowerShell (`winget`) or [python.org](https://www.python.org/downloads/windows/) | Yes (Linux commands) |
 | Clone and branch | Yes | Yes | Yes |
 | Virtual environment | Yes | Yes | Yes |
 | `pip install` | Yes | Yes | Yes |
