@@ -1,4 +1,3 @@
-
 ---
 name: security-media-privacy
 description: "Use when reviewing code that captures, processes, uploads, streams, or stores camera frames, photos, or video, especially before sending media to an API or multimodal AI model. Trigger for requests such as 'check my webcam privacy', 'audit image uploads', 'does this photo upload expose GPS?', or 'review camera-frame handling'. If a code review already reveals a media-handling pipeline, proactively offer this read-only audit even if the user did not explicitly ask for a security audit. Not for general prompt-injection, agent-tool security, RAG, or vector-database isolation reviews; use security-agent-guard for those."
