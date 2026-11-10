@@ -1,6 +1,6 @@
 ---
 title: Google services
-summary: Unofficial. Add Google login, maps, Firebase, analytics, Search Console, Sheets and Gemini to your site, with restricted keys and budget alerts.
+summary: Add Google login, maps, Firebase, analytics, Search Console, Sheets and Gemini to your site, with restricted keys and budget alerts. Unofficial, not made by Google.
 categories: Backend, Security, Frontend
 maintainers: [NirGeron98, AdiBer1]
 ---
