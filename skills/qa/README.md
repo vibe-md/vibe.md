@@ -1,5 +1,8 @@
 ---
-categories: Testing, Productivity, Performance, Debugging, DevOps
+categories: Testing, Productivity, Debugging
+maintainers:
+  - Faigy-Rosenfeld
+  - odelia50872
 ---
 
 # QA & Automation Package
@@ -25,7 +28,3 @@ A comprehensive, engineering-grade collection of skills for software testing, qu
 
 **Delivery & Automation**
 - `qa-ci-cd-pipelines`: CI/CD Testing Automation
-
-## Maintainers
-- @Faigy-Rosenfeld
-- @odelia50872
