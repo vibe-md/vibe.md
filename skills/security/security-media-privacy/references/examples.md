@@ -1,4 +1,3 @@
-
 # Media Privacy Reference Vulnerabilities & Fixes
 
 This document contains small teaching examples for the `security-media-privacy` skill.
@@ -212,26 +211,37 @@ def upload_frame(frame):
 Prefer an in-memory encoded buffer when the application does not need a disk file.
 
 ```python
+
 import cv2
 import requests
 
-def upload_frame(frame):
+
+def upload_frame(protected_frame):
+    """
+    protected_frame must already have passed through
+    the application's tested anonymization process.
+
+    Never pass the original, unprotected frame here.
+    """
+
+    if protected_frame is None:
+        raise ValueError("Protected frame is required")
 
     success, encoded = cv2.imencode(
         ".jpg",
-        frame
+        protected_frame
     )
 
     if not success:
         raise RuntimeError(
-            "Could not encode frame"
+            "Could not encode protected frame"
         )
 
     response = requests.post(
         "https://api.example.com/v1/analyze",
         files={
             "image": (
-                "frame.jpg",
+                "protected-frame.jpg",
                 encoded.tobytes(),
                 "image/jpeg"
             )
@@ -240,6 +250,7 @@ def upload_frame(frame):
     )
 
     response.raise_for_status()
+
 ```
 
 If a temporary disk file is genuinely required:
