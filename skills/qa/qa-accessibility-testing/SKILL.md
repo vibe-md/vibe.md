@@ -1,44 +1,31 @@
 ---
 name: qa-accessibility-testing
-description: Automates accessibility testing to ensure WCAG compliance. Use when auditing web pages for keyboard navigation and contrast. Not for backend non-UI services.
+description: Adds automated axe-core checks (contrast, alt text, ARIA) to UI tests. Use when auditing web pages for automated WCAG rules. Keyboard and screen-reader checks remain manual.
 metadata:
   collection: vibe.md
   group: qa
-  maintainers:
-    - Faigy-Rosenfeld
-    - odelia50872
 ---
 
 # QA Accessibility Testing
 
 ## Purpose
-Validates that web applications are accessible to all users, verifying contrast, ARIA attributes, and keyboard navigation.
+Validates that web applications comply with automated accessibility standards using `axe-core`.
 
 ## When to Use
-- When building new UI components or web pages.
-- Auditing existing sites for WCAG violations.
-## When NOT to Use
-- For non-UI backend services.
+- When auditing web UI components or pages for automated WCAG rules (contrast, image alt attributes, ARIA roles).
 
 ## Prerequisites
-- UI testing framework installed (e.g., Playwright with `@axe-core/playwright`).
+- UI testing framework installed. Ask the user for confirmation before installing new packages (such as `@axe-core/playwright`).
 
 ## Step-by-Step Instructions
-1. **Inject Axe:** Configure the test to inject `axe-core` into the page.
-2. **Define Rulesets:** Specify which WCAG standards to test against (e.g., WCAG 2.1 AA).
-3. **Scan Page:** Execute the accessibility scan on specific components or the whole page.
-4. **Filter Violations:** Exclude known third-party violations if necessary.
-5. **Report Output:** Format the findings into a clear list of violations.
-
-## Validation Criteria
-- The test must explicitly catch contrast issues, missing alt text, and invalid ARIA roles.
+1. **Check Existing Setup:** Inspect the project to reuse the existing test runner. Ask the user before installing any new dependencies.
+2. **Inject Axe:** Configure the test to run `axe-core` scans on target components or pages.
+3. **Scan & Assert:** Validate automated rules (color contrast, missing alt text, ARIA attributes).
+4. **Report Limitations:** Remind the user that keyboard navigation and screen-reader flows require manual testing.
 
 ## Safety Considerations
-- Automated a11y tests catch only ~30% of issues; remind the user that manual keyboard testing is still required.
-
-## Expected Output
-An automated script that runs an accessibility audit and a report structure for violations.
+- Automated a11y tests catch only a subset of WCAG issues. Always inform the user that full compliance requires manual testing.
 
 ## Examples
 **User:** "Add an accessibility check to our homepage test."
-**Agent:** Integrates `@axe-core/playwright`, navigates to the homepage, analyzes the DOM, and adds an assertion `expect(accessibilityScanResults.violations).toEqual([])`.
+**Agent:** Reuses Playwright setup, asks to install `@axe-core/playwright`, injects axe into the homepage test, and asserts zero automated violations.

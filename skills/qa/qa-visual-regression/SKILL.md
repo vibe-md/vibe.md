@@ -4,41 +4,22 @@ description: Configures visual regression testing to detect pixel differences. U
 metadata:
   collection: vibe.md
   group: qa
-  maintainers:
-    - Faigy-Rosenfeld
-    - odelia50872
 ---
 
 # QA Visual Regression Testing
 
 ## Purpose
-Ensures that code changes do not accidentally alter the visual appearance, layout, or typography of the application.
+Detects visual layout shifts and styling regressions using screenshot comparison.
 
 ## When to Use
-- When introducing global CSS changes.
-- To baseline critical UI components (e.g., Design System library).
-## When NOT to Use
-- For testing business logic or API data.
-
-## Prerequisites
-- A visual testing framework (e.g., Playwright `toHaveScreenshot()`, Percy).
+- Capturing visual baselines for UI components or monitoring visual design stability.
 
 ## Step-by-Step Instructions
-1. **Define Scope:** Identify which pages or components need visual baselines.
-2. **Handle Dynamic Data:** Mock dynamic elements (dates, animations) to prevent flaky snapshots.
-3. **Write Snapshot Tests:** Configure the test to navigate to the page and capture the screenshot.
-4. **Set Thresholds:** Define acceptable pixel difference thresholds (e.g., `maxDiffPixels`).
-5. **Review Process:** Instruct the user on how to update baselines (`-u` flag).
-
-## Validation Criteria
-- Dynamic elements must be masked or mocked to ensure consistent screenshots.
-
-## Safety Considerations
-- Be mindful of OS-level rendering differences (snapshots generated on Mac may fail on Linux CI).
-
-## Expected Output
-A test script configured for visual comparison and instructions on managing baseline images.
+1. **Setup Snapshots:** Configure visual comparison using existing E2E/snapshot tools.
+2. **Handle Dynamic Content:** Mask dynamic text, dates, or animations before capturing.
+3. **Review Differences:** When visual differences occur, present snapshot diffs to the user.
+4. **Update Baselines:** Obtain explicit user approval before executing commands with `-u` (update snapshot baseline).
 
 ## Examples
-**User:** "Set up visual regression for our Button component in Playwright."
-**Agent:** Creates a test that renders the Button in various states (hover, disabled) and asserts them against visual snapshots, masking any dynamic text.
+**User:** "Set up visual snapshot for the Navbar component."
+**Agent:** Creates snapshot test, masks dynamic user avatar, and informs user how diffs will be presented for approval.

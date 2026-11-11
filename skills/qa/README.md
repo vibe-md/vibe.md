@@ -1,4 +1,6 @@
 ---
+title: QA & Automation
+summary: Complete quality assurance, test strategy, automated testing, and regression analysis package.
 categories: Testing, Productivity, Debugging
 maintainers:
   - Faigy-Rosenfeld
