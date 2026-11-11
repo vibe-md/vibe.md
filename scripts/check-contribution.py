@@ -2,7 +2,7 @@
 """Write a friendly, plain-language report about a Pull Request's changes.
 
     python3 scripts/check-contribution.py --base origin/main
-    python3 scripts/check-contribution.py --base HEAD^1 --pr-body-file body.md   # in CI
+    python3 scripts/check-contribution.py --base HEAD^1 --pr-body-file body.md --pr-author octocat   # in CI
     python3 scripts/check-contribution.py --files skills/my-skill/SKILL.md      # no Git needed
 
 The same check runs on every Pull Request in CI, and contributors (or their agents,
@@ -12,9 +12,9 @@ It only reads files. It never runs anything from the files it checks, never uses
 network, and never posts anything. The rules are fixed; there is no AI involved.
 
 It fails only on problems that are clear-cut: validator errors, hidden characters in
-skill files, and text that looks like a real secret. Everything that needs a human's
-judgement is a warning. Exit status: 0 when nothing must be fixed, 1 otherwise,
-2 for usage errors.
+skill files, text that looks like a real secret, and a package skill that its package
+README does not mention. Everything that needs a human's judgement is a warning.
+Exit status: 0 when nothing must be fixed, 1 otherwise, 2 for usage errors.
 """
 
 import argparse
@@ -309,6 +309,66 @@ def check_skill_files(root, changes, findings):
             findings.warn(unit + "/README.md", "add `maintainers: [your-github-username]` so the website credits you.")
 
 
+GITHUB_LOGIN = re.compile(r"^[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})$")
+
+
+def maintainers_of(data):
+    """The `maintainers` of a package README's frontmatter, lowercased."""
+    value = data.get("maintainers") if isinstance(data, dict) else None
+    if isinstance(value, str):
+        value = value.replace(",", " ").split()
+    if not isinstance(value, (list, tuple)):  # the validator reports any other type
+        return set()
+    return {str(login).strip().lstrip("@").lower() for login in value or [] if str(login).strip()}
+
+
+def check_package_credit(root, changes, findings, author=None):
+    """A skill added to an existing package must be listed in that package's README, and its
+    author belongs in the README's `maintainers`, which is how the website credits them.
+
+    A package README added in this Pull Request is a new package, which the checks above cover.
+    The README must mention every package skill that changes (all of them do on main), so a
+    missing row fails. The author check only warns: a maintainer may open the Pull Request for
+    someone else, and a skill moved or renamed inside its package is not new work."""
+    status_of = {path: status for status, path in changes}
+    login = author if author and GITHUB_LOGIN.fullmatch(author) else None
+    by_package = {}
+    for status, path in changes:
+        parts = path.split("/")
+        if status == "D" or len(parts) != 4 or parts[0] != "skills" or parts[3] != "SKILL.md":
+            continue
+        by_package.setdefault("skills/" + parts[1], []).append((status, parts[2]))
+    for unit, skills in sorted(by_package.items()):
+        readme_path = unit + "/README.md"
+        if status_of.get(readme_path) == "A" or (root / unit / "SKILL.md").is_file():
+            continue  # a new package, or a standalone skill with a folder inside it
+        text = read_text(root, readme_path)
+        parsed = frontmatter(text) if text is not None else None
+        if parsed is None:  # no README, or broken frontmatter: the validator reports it
+            continue
+        data, body, _ = parsed
+        listed = []
+        for _, name in sorted(skills):
+            if re.search(r"(?<![A-Za-z0-9-]){}(?![A-Za-z0-9-])".format(re.escape(name)), body):
+                listed.append(name)
+            else:
+                findings.fail(readme_path, "`{}` is not mentioned in this package README. Add a row for it to the "
+                                           "skills table: its name and what it does.".format(name))
+        moved = any(status == "D" and path.startswith(unit + "/") and path.endswith("/SKILL.md")
+                    for status, path in changes)
+        new = [name for status, name in sorted(skills) if status == "A"]
+        if not new or moved or login is None:
+            continue
+        if login.lower() in maintainers_of(data):
+            findings.good("`{}` credits {} for {}.".format(readme_path, login,
+                                                          ", ".join("`{}`".format(n) for n in new)))
+        else:
+            findings.warn(readme_path, "add your GitHub username ({}) to `maintainers` in this README, keeping "
+                                       "the names already there, so the website credits you for {}. If you are "
+                                       "opening this Pull Request for someone else, add their username "
+                                       "instead.".format(login, ", ".join("`{}`".format(n) for n in new)))
+
+
 def strip_comments(text):
     """Remove <!-- ... --> comments in one pass (an unclosed comment runs to the end)."""
     out, position = [], 0
@@ -423,6 +483,8 @@ def main(argv=None):
     source.add_argument("--files", nargs="+", help="check these repository paths instead of a Git diff")
     parser.add_argument("--root", default=str(REPO_ROOT), help="repository to check (default: this one)")
     parser.add_argument("--pr-body-file", help="file holding the Pull Request description")
+    parser.add_argument("--pr-author", help="GitHub username of the Pull Request's author, to check that a "
+                                            "skill added to an existing package credits them")
     parser.add_argument("--summary-file", default=os.environ.get("GITHUB_STEP_SUMMARY"),
                         help="append the Markdown report here (default: $GITHUB_STEP_SUMMARY)")
     args = parser.parse_args(argv)
@@ -452,6 +514,7 @@ def main(argv=None):
     check_hidden_and_secrets(root, changes, findings)
     check_risky_commands(root, changes, findings)
     check_skill_files(root, changes, findings)
+    check_package_credit(root, changes, findings, args.pr_author)
     check_template(body, findings)
 
     report = render(findings, units)

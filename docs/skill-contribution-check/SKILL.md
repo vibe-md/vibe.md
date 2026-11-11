@@ -66,6 +66,7 @@ The rules live in the repository, not here, so read them every time.
    - The `description` says what the skill does and when to use it, in words a user would say.
    - Categories come from `scripts/categories.py`. A standalone skill writes them as one string under `metadata` (`categories: Security, Testing`); a package README uses the fields CONTRIBUTING.md documents for it, including `maintainers` as a YAML list (`maintainers: [octocat]`).
    - Maintainers are set, so the website credits the author.
+   - A skill added to a package that already exists on `main`: the package `README.md` mentions the skill in its skills table, and the contributor's GitHub username is in its `maintainers`, next to the names already there. The website credits the README's `maintainers`, and CI fails when the skill is missing from the README. Both are Must fix. Ask the user for their GitHub username; never work it out from git config, an email address, a path or a remote, and don't call `gh` for it. If they are opening the Pull Request for someone else, it's the username of the person who wrote the skill. No approval from the package's existing maintainers is needed.
    - Every relative link resolves.
    - `## When to Use` and `## Examples` exist with those exact headings, because the website shows them.
    - Every code block is closed.
@@ -82,7 +83,7 @@ The rules live in the repository, not here, so read them every time.
 
 8. **Report** in this shape:
    - **Ready** or **Not ready yet**: "Not ready yet" if anything is under Must fix.
-   - **Must fix**: validator or test errors and anything that breaks SECURITY.md, each with `file:line` and the fix.
+   - **Must fix**: validator or test errors, anything that breaks SECURITY.md, and a skill added to an existing package without its README row or without the contributor in that README's `maintainers`, each with `file:line` and the fix.
    - **Worth improving**: everything else from steps 4 to 7, such as a missing `## Examples` section, missing maintainers, or work outside the skill's folder. Keep it to the few points that matter most.
    - **Looks good**: what already meets the rules, so they know what not to touch.
 
@@ -115,6 +116,7 @@ The rules live in the repository, not here, so read them every time.
       | Valid YAML frontmatter with `name` and `description` | `validate-skills.py` passed in step 3. |
       | Name unique, kebab-case, matches the folder, package prefix | `validate-skills.py` passed with no prefix warning for this skill. |
       | New package README | You ticked "New package" above, and its `README.md` passed the validator. Otherwise leave it empty and note why, such as "standalone skill, no package README" or "not a new package". |
+      | New skill in an existing package: username and README row | You ticked "New skill in an existing package" above, and step 5 found the skill's row in the package `README.md` and the contributor's username in its `maintainers`. Otherwise leave it empty and note why, such as "not a skill in an existing package". |
       | Description says what and when | Step 5 found no problem with the description. |
       | Resources and relative links | `validate-skills.py` passed (it checks links). |
       | Prerequisites documented | Step 5: you read `SKILL.md` and its needs (tools, accounts, network) are written there, or it needs none. |

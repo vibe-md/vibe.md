@@ -75,7 +75,8 @@ jobs:
 
   # A plain-language report on the Pull Request's changes, in the job summary and as
   # annotations. Fixed rules only: no AI, no network, no secrets, nothing posted. It
-  # fails only on clear-cut problems (validator errors, hidden characters, secrets).
+  # fails only on clear-cut problems (validator errors, hidden characters, secrets, and a
+  # package skill missing from its package README).
   contribution-check:
     name: Contribution check
     if: github.event_name == 'pull_request'
@@ -104,9 +105,12 @@ jobs:
           # Untrusted text: passed through the environment and written to a file, never
           # interpolated into the script.
           PR_BODY: ${{ github.event.pull_request.body }}
+          # The author's GitHub username, so a skill added to an existing package can be
+          # checked against that package's maintainers. Also passed only through the environment.
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
         run: |
           printf '%s' "$PR_BODY" > "$RUNNER_TEMP/pr-body.md"
-          python scripts/check-contribution.py --base HEAD^1 --pr-body-file "$RUNNER_TEMP/pr-body.md"
+          python scripts/check-contribution.py --base HEAD^1 --pr-body-file "$RUNNER_TEMP/pr-body.md" --pr-author "$PR_AUTHOR"
 
   # Single, stable check to require in branch protection, independent of the matrix.
   ci-passed:
