@@ -74,6 +74,8 @@ python3 scripts/validate-skills.py
 python3 -m unittest discover -s tests
 ```
 
+On Windows, or for every command per system, see [docs/COMMANDS.md](docs/COMMANDS.md).
+
 ## Repository architecture
 
 ```text
@@ -85,9 +87,13 @@ vibe.md/
 ├── scripts/
 │   ├── install.sh             # Installer: install, update, uninstall (bash, no dependencies)
 │   ├── validate-skills.py     # Validator used locally and in CI
+│   ├── check-contribution.py  # Friendly report on a Pull Request's changes, locally and in CI
 │   └── build-packages.py      # Builds ZIP downloads and catalog.json for every package
 ├── evals/                     # Natural-language scenarios for checking skill selection
 ├── tests/                     # Validator, installer, lifecycle, packaging, and catalog tests
+├── docs/skill-contribution-check/SKILL.md  # How agents check a skill before a PR (not a published skill)
+├── docs/skill-contribution-check/pr_link.py  # Builds the filled-in Pull Request link for that check
+├── AGENTS.md, CLAUDE.md       # Tell coding agents to run that check (never published)
 └── .github/
     ├── workflows/validate-skills.yml   # Runs on every Pull Request
     ├── workflows/publish.yml           # Runs only after a merge to main
@@ -101,7 +107,7 @@ Key rules:
 1. `skills/` is the single source of truth. Each skill exists exactly once, there.
 2. A skill has `SKILL.md`; a group contains skill directories one level down and has no `SKILL.md` of its own. Group names use lowercase kebab-case. `skills/_shared/` is reserved for common skills installed with every selection.
 3. Skills are discovered automatically by the installer, validator, and CI. Names must be unique across standalone skills, all groups, and shared skills because installation flattens them into one directory.
-4. Agent directories such as `.claude/skills/` are *installation destinations*, not sources. Never commit skills there.
+4. Agent directories such as `.claude/skills/` are *installation destinations*, not sources. Never commit skills there. The maintainers' own review and docs subagents are kept in a separate maintainers' repository, not here.
 5. Test fixtures live in `tests/fixtures/` and never appear in the public catalog.
 
 ## Adding a skill
@@ -111,7 +117,8 @@ Key rules:
 3. **Create the directory** `skills/<package>/<package>-<skill>/` and add `SKILL.md`. A skill with no siblings may also live on its own as `skills/<skill-name>/SKILL.md`; it is published as a package of one skill, and its name needs no prefix.
 4. **Add optional resources** (`scripts/`, `references/`, `assets/`) only if the skill needs them.
 5. **Validate and test** as described below.
-6. **Open a Pull Request.**
+6. **Check your skill.** Ask your agent "check my skill before I open a PR". It follows [`docs/skill-contribution-check/SKILL.md`](docs/skill-contribution-check/SKILL.md) and tells you what to fix ([details](#check-your-skill)).
+7. **Open a Pull Request.**
 
 A skill contribution should stay inside its standalone skill or group directory. If you think the tooling needs to change to support your skill, open an issue first so we can keep the infrastructure generic.
 
@@ -128,15 +135,15 @@ skills/security/
 └── security-audit/SKILL.md    # at least one skill
 ```
 
-`README.md` may start with this frontmatter. Every field is optional, and anything
-omitted is derived (the title from the directory name, the summary from the first
-paragraph, the skills from the directory):
+`README.md` must start with this frontmatter. `categories` is required; every other field is
+optional, and anything omitted is derived (the title from the directory name, the summary
+from the first paragraph, the skills from the directory):
 
 ```yaml
 ---
 title: Security
 summary: One sentence that says what the package helps with.
-category: Security          # Version Control, Testing, Debugging, Deployment, Documentation, Security, or Productivity
+categories: Security, Backend   # required: one to three, comma-separated; the first is the main one (see the list below)
 maintainers: [your-github-username]
 ---
 ```
@@ -149,19 +156,27 @@ to `.github/CODEOWNERS` if you want to review future changes to the package.
 
 A single skill added as `skills/<skill-name>/SKILL.md` is a package of one, so it has no
 `README.md` to describe it. It describes itself under `metadata` in its own frontmatter.
-Every field is optional:
+`categories` is required; the other fields are optional:
 
 ```yaml
 metadata:
-  category: Security            # same choices as above
+  categories: Security, Backend   # required: one to three, same choices as above
   maintainers: your-github-username, another-username
   title: Secret Guard           # defaults to the skill name, title-cased
 ```
 
 The summary is always the skill's `description`. `maintainers` is one comma-separated
-string, because Agent Skills metadata values are strings. Without a `category` the website
-lists the skill under Productivity; without `maintainers` it shows no maintainer links.
+string, because Agent Skills metadata values are strings. Without `maintainers` the website
+credits whoever first added the skill.
 Your existing `metadata` entries, such as `author` or `collection`, are unaffected.
+
+**Categories.** Choose one to three, written as a comma-separated string, for example
+`Database, Security, Backend`. The first is the primary category. The website's skills
+directory filters by these. The choices are: Version Control, Testing, Debugging, Deployment, Documentation, Security, Productivity, Database, Frontend, Backend, DevOps, Performance, Accessibility, Monitoring, AI / Agents. The validator fails when `categories` is
+missing or empty, so leave it empty and the checks stay red until you pick. A group sets
+the same `categories` string in its README frontmatter. The older single `category` field
+is still read, but `categories` is what the validator requires.
+
 
 ### Adding a group (technical details)
 
@@ -205,7 +220,7 @@ The file must start with `---` on the very first line.
 | `description` | Yes | 20–1024 characters. Say what the skill does **and** when an agent should use it. |
 | `license` | No | A license name such as `MIT`, or the name of a bundled license file. |
 | `compatibility` | No | Up to 500 characters. Environment requirements, for example `Requires git and the GitHub CLI (gh)`. |
-| `metadata` | No | A mapping for extra information such as `author` or `version`. A standalone skill can also set `category`, `maintainers`, and `title` here ([details](#describing-a-standalone-skill)). |
+| `metadata` | Standalone skills only | A mapping for extra information such as `author` or `version`. A standalone skill must set `categories` here and can also set `maintainers` and `title` ([details](#describing-a-standalone-skill)). |
 | `allowed-tools` | No | Space-separated list of pre-approved tools. Experimental; support varies by agent. Avoid pre-approving shell access. |
 
 Agents may support additional fields (for example Claude Code's `disable-model-invocation`). The validator allows them, but every extra field makes a skill less portable, so use them only when necessary and explain why in your Pull Request.
@@ -342,8 +357,9 @@ The validator checks that:
 - the skill contains no symbolic links and has instructions after the frontmatter,
 - no file is larger than 1 MiB, binary files appear only under `assets/`, and text is UTF-8,
 - no file contains an obvious secret (private keys and common token formats),
-- the package `README.md` frontmatter, if present, uses only the documented fields,
-- a standalone skill's `metadata.category` is one of the listed categories and its `metadata.maintainers` are GitHub usernames.
+- every package and standalone skill chooses one to three `categories` from the list above,
+- the package `README.md` frontmatter uses only the documented fields,
+- a standalone skill's `metadata.maintainers`, when set, are GitHub usernames.
 
 It also **warns** (without failing) about bundled `scripts/`, executable files, instructions that pipe a download into a shell, and skill names without the package prefix. Warnings tell the reviewer where to look closely.
 
@@ -361,13 +377,36 @@ bash scripts/install.sh --skill <skill-name> --agent claude-code --project /tmp/
 
 Then open the agent in that project, check that the skill is discovered, and run a realistic request. Mention which agents you tested in your Pull Request.
 
+### Check your skill
+
+Before you open the Pull Request, ask your coding agent: **"check my skill before I open a PR"**.
+It follows the instructions in [`docs/skill-contribution-check/SKILL.md`](docs/skill-contribution-check/SKILL.md): it
+compares your branch with vibe.md's `main`, runs the checks above, looks for safety problems and
+changes outside your skill's folder, and reports **Ready** or **Not ready yet** with the file and
+line of each problem. It does not change your files unless you ask, and it never opens the Pull
+Request for you. It can also draft your Pull Request description from the template.
+
+You may not even need to ask. This repository has an `AGENTS.md` file (and a `CLAUDE.md` that points
+to it), which many coding agents read. It tells them to run this check when you add or change a skill
+and say you're done. If your agent doesn't pick it up, tell it to read and follow
+`docs/skill-contribution-check/SKILL.md`. It lives in `docs/`, not `skills/`, because it is only for
+contributing to this repository: it is not published or installed.
+
+To see the same report the Pull Request will get, run it yourself:
+
+```bash
+python3 scripts/check-contribution.py --base upstream/main   # in a fork; use origin/main in a clone of vibe-md/vibe.md
+```
+
+In a fork, add vibe.md as `upstream` once: `git remote add upstream https://github.com/vibe-md/vibe.md.git`, then `git fetch upstream main`.
+
 ## Pull Request workflow
 
 1. Create a branch: `git checkout -b add-release-notes-skill`.
 2. Commit your changes with a clear message, for example `Add release-notes skill`.
 3. Push to your fork and open a Pull Request against `main`.
-4. Fill in the Pull Request template checklist.
-5. Wait for CI. The **Validate skills** workflow runs the validator, builds every package and the catalog, and runs the full test suite on Linux and macOS. If it fails, open the failed job; validation errors are also shown inline on the changed files. The first time you contribute, a maintainer has to approve the workflow run before it starts.
+4. Fill in the Pull Request template checklist. When your agent [checks your skill](#check-your-skill), it can fill in the template for you. It ticks only what it checked or you confirmed. It can also give you a link that opens the Pull Request with the description filled in.
+5. Wait for CI. The **Validate skills** workflow runs the validator, builds every package and the catalog, and runs the full test suite on Linux and macOS. If it fails, open the failed job; validation errors are also shown inline on the changed files. The **Contribution check** job adds a plain-language report to the job summary. It fails only on clear problems, such as validator errors, hidden characters, or secrets. Everything else is a warning to look at. The first time you contribute, a maintainer has to approve the workflow run before it starts.
 6. Respond to review feedback by pushing more commits to the same branch. New commits require a fresh approval.
 7. A maintainer merges the Pull Request once CI passes and the review is approved. **Contributors cannot merge their own Pull Requests.**
 

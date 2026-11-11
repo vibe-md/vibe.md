@@ -7,10 +7,12 @@ in this repository**, so a maintainer with admin access has to apply them.
 
 ## How publication works
 
-> **Status:** the publication workflow is implemented but has not run on GitHub yet. No release
-> exists, and the website deploy hook is not configured. Treat publication as unverified until
-> a maintainer has completed the checklist at the end of this page and one real merge has
-> produced a release.
+> **Status (checked 2026-11-03):** publication is live. Every push to `main` publishes a
+> `catalog-<12-character-sha>` release with `catalog.json` and the ZIPs; the latest is
+> `catalog-794e2509ffc5` (85 files). The `VERCEL_DEPLOY_HOOK_URL` secret is configured: the
+> "Rebuild the website" step of that run logged `Triggered a website rebuild.` That shows the
+> hook accepted the request, not that the website deployed successfully; check the Vercel
+> project for that. The GitHub settings below were **not** re-checked; see their own date.
 
 ```text
 merge to main ─► publish.yml ─► GitHub Release "catalog-<sha>" ─► deploy hook ─► website rebuild
@@ -37,8 +39,8 @@ gh release edit catalog-<12-character-sha> --latest
 
 ## Required GitHub settings
 
-Read from GitHub on 2026-10-28 (read-only), so this table is a snapshot: check the
-settings pages before relying on it.
+Read from GitHub on 2026-10-28 (read-only) and not re-checked since, so this table is a
+snapshot that may be out of date: check the settings pages before relying on it.
 
 An active repository ruleset named **`block`** applies to the default branch, with **no
 bypass actors** (administrators are bound by it). It requires a Pull Request with one
@@ -61,7 +63,7 @@ rule wins.
 | Fork pull request workflows need approval | first-time contributors only | all outside collaborators |
 | Require actions to be pinned to a full commit SHA | **no** | yes (the workflows already pin every action) |
 
-Still incomplete: every **bold** row above, and the website hook below. Until they are
+Still incomplete as of 2026-10-28: every **bold** row above. Until they are
 applied, a pushed approval can go stale without being dismissed, and no setting ties
 approval to the people listed in CODEOWNERS.
 
@@ -92,8 +94,33 @@ In **Settings → Actions → General**:
 | --- | --- | --- |
 | Fork pull request workflows | approval for first-time contributors | **approval for all outside collaborators** |
 | Workflow permissions | read repository contents | keep read-only |
-| Allow Actions to create and approve pull requests | off | keep off |
+| Allow Actions to create and approve pull requests | off | required for the automated skills README PR |
 | Require actions to be pinned to a full commit SHA | off | **on** (the workflows already pin every action) |
+
+The skills README workflow needs **Allow GitHub Actions to create and approve
+pull requests** enabled at both organization and repository level. GitHub uses
+one setting for both abilities; enabling it also permits appropriately scoped
+workflows to approve PRs. The README workflow itself only creates or updates a
+PR, uses a dedicated automation branch, and never approves or merges it. The
+default token permissions remain read-only; write permissions are limited to
+its trusted-main job. A GitHub-token-created PR may require a maintainer to
+approve its CI run before merging. After enabling the setting and merging the
+workflow, use **Actions → Update skills README → Run workflow** to verify setup;
+a PR is created only when the index differs from main.
+
+The maintainers also run a private scheduled routine that verifies and merges
+these PRs. It approves and merges one only when the PR changes nothing except
+`skills/README.md` and the file matches, byte for byte, what
+`scripts/update-skills-readme.py` on main produces. It leaves any other PR
+alone and reports it to the maintainers. The routine does not approve workflow
+runs, so CI on these PRs shows as waiting for approval (`action_required`).
+
+To merge one by hand when the routine is off:
+
+1. Check out an up-to-date `main` and run `python3 scripts/update-skills-readme.py`.
+2. Run `git diff skills/README.md` and check that it matches the PR's change.
+3. Check that the PR touches only `skills/README.md`.
+4. Approve and merge the PR.
 
 Never switch the validation workflow to `pull_request_target`, and do not add a
 step that runs code from a Pull Request with a token or secret in the environment.
@@ -121,8 +148,10 @@ you would be comfortable with every user running the skill.
 
 ## Before relying on automatic publication
 
-1. Apply the settings marked **bold** above.
-2. Create the Vercel deploy hook and the `VERCEL_DEPLOY_HOOK_URL` secret (optional but recommended).
-3. Merge a small change to `main` and confirm in **Actions → Publish catalog** that a `catalog-<sha>` release appears with `catalog.json` and the ZIPs.
-4. Check that the website rebuilt and shows the same source revision as `catalog.json`.
+Status as of 2026-11-03 is noted in italics.
+
+1. Apply the settings marked **bold** above. *(Not re-checked since 2026-10-28.)*
+2. Create the Vercel deploy hook and the `VERCEL_DEPLOY_HOOK_URL` secret (optional but recommended). *(Done: the publish run for `794e250` triggered the hook.)*
+3. Merge a small change to `main` and confirm in **Actions → Publish catalog** that a `catalog-<sha>` release appears with `catalog.json` and the ZIPs. *(Done: releases publish on every push to `main`.)*
+4. Check that the website rebuilt and shows the same source revision as `catalog.json`. *(Not verified from this repository; check the website or its Vercel project.)*
 5. Only then tell contributors that merged contributions are published automatically.

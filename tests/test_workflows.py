@@ -99,5 +99,22 @@ class ValidationWorkflowTests(unittest.TestCase):
         self.assertIn("sha256sum --check", step["run"])
 
 
+class SkillsReadmeWorkflowTests(unittest.TestCase):
+    def test_write_job_runs_only_from_trusted_main(self):
+        workflow = load("update-skills-readme.yml")
+        self.assertEqual(set(workflow["on"]), {"push", "workflow_dispatch"})
+        self.assertEqual(workflow["on"]["push"]["branches"], ["main"])
+        self.assertEqual(workflow["permissions"], {"contents": "read"})
+        job = workflow["jobs"]["update"]
+        self.assertIn("github.repository == 'vibe-md/vibe.md'", job["if"])
+        self.assertIn("github.ref == 'refs/heads/main'", job["if"])
+        self.assertEqual(job["permissions"], {"contents": "write", "pull-requests": "write"})
+        checkout = next(step for step in job["steps"] if step.get("uses", "").startswith("actions/checkout"))
+        self.assertIs(checkout["with"]["persist-credentials"], False)
+        for step in job["steps"]:
+            if "uses" in step:
+                self.assertRegex(step["uses"], r"@[0-9a-f]{40}$")
+
+
 if __name__ == "__main__":
     unittest.main()

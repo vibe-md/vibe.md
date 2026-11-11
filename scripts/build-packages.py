@@ -22,6 +22,9 @@ import subprocess
 import tempfile
 import zipfile
 from pathlib import Path
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from categories import infer_categories
 
 ROOT = Path(__file__).resolve().parent.parent
 AGENTS = {
@@ -173,6 +176,56 @@ def read_frontmatter(path):
     return (data if isinstance(data, dict) else {}), text[end + 4:]
 
 
+SECTION_HEADING = re.compile(r"^##\s+(.+?)\s*#*\s*$")
+FENCE = re.compile(r"^\s*(`{3,}|~{3,})")
+
+
+def markdown_section(body, title):
+    """The text under the level-2 heading named exactly `title` (any case), or None.
+
+    The section ends at the next level-1 or level-2 heading. Headings inside fenced
+    code blocks are content, so "## Example inventory" or a heading in a code sample
+    never starts or ends a section.
+    """
+    lines, fence, capturing = [], None, False
+    for line in body.splitlines():
+        marker = FENCE.match(line)
+        if marker:
+            token = marker.group(1)
+            if fence is None:
+                fence = token
+            elif token[0] == fence[0] and len(token) >= len(fence):
+                fence = None
+        elif fence is None and line.startswith(("# ", "## ")):
+            if capturing:
+                break
+            heading = SECTION_HEADING.match(line)
+            capturing = bool(heading) and heading.group(1).strip().lower() == title.lower()
+            continue
+        if capturing:
+            lines.append(line)
+    return "\n".join(lines).strip() or None
+
+
+def describe_skill(skills_dir, path, name):
+    """One skill's catalog entry, with the sections a website page needs to explain it.
+
+    'path' is the SKILL.md location relative to the repository root, such as
+    "skills/llm/llm-eval-builder/SKILL.md", for linking to the source.
+    'when_to_use' falls back to the description, which by the contribution rules already
+    says when to use the skill. 'examples' is null when the skill has no Examples section.
+    """
+    data, body = read_frontmatter(path)
+    description = " ".join(str(data.get("description", "")).split())
+    return {
+        "name": name,
+        "path": "skills/" + Path(path).relative_to(skills_dir).as_posix(),
+        "description": description,
+        "when_to_use": markdown_section(body, "When to Use") or description,
+        "examples": markdown_section(body, "Examples"),
+    }
+
+
 def first_paragraph(markdown):
     """The first paragraph of prose, skipping headings, lists, and code."""
     lines, in_code = [], False
@@ -212,6 +265,7 @@ def standalone_metadata(data):
     return {
         "title": raw.get("title"),
         "category": raw.get("category"),
+        "categories": raw.get("categories"),
         "maintainers": maintainers.replace(",", " ").split() if isinstance(maintainers, str) else [],
     }
 
@@ -223,16 +277,12 @@ def describe_package(skills_dir, group, artifacts):
     standalone = (group_dir / "SKILL.md").is_file()
     if standalone:
         data, _ = read_frontmatter(group_dir / "SKILL.md")
-        description = " ".join(str(data.get("description", "")).split())
-        meta, body, readme = standalone_metadata(data), description, None
-        skills = [{"name": group, "description": description}]
+        skills = [describe_skill(skills_dir, group_dir / "SKILL.md", group)]
+        meta, body, readme = standalone_metadata(data), skills[0]["description"], None
     else:
         readme = group_dir / "README.md"
         meta, body = read_frontmatter(readme) if readme.is_file() else ({}, "")
-        skills = []
-        for entry in sorted(group_dir.glob("*/SKILL.md")):
-            data, _ = read_frontmatter(entry)
-            skills.append({"name": entry.parent.name, "description": " ".join(str(data.get("description", "")).split())})
+        skills = [describe_skill(skills_dir, entry, entry.parent.name) for entry in sorted(group_dir.glob("*/SKILL.md"))]
     shared = sorted(entry.parent.name for entry in (skills_dir / "_shared").glob("*/SKILL.md"))
     package = {
         "id": group,
@@ -247,6 +297,13 @@ def describe_package(skills_dir, group, artifacts):
     }
     if meta.get("category"):
         package["category"] = meta["category"]
+    explicit = meta.get("categories")
+    if explicit:
+        package["categories"] = [value.strip() for value in explicit.split(",")]
+    elif meta.get("category"):
+        package["categories"] = [meta["category"]]
+    else:
+        package["categories"] = infer_categories(package["summary"])
     return package
 
 

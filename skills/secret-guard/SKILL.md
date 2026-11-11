@@ -5,6 +5,7 @@ license: MIT
 metadata:
   collection: vibe.md
   author: talforsher
+  categories: Security
 ---
 
 # Secret guard

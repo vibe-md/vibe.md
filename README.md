@@ -9,7 +9,7 @@ AI can write code. Great software takes more than code.
 
 vibe.md is an open-source collection of reusable skills for AI coding agents. Skills give your agent proven workflows for everything around the code: Git, collaboration, testing, documentation, code quality, deployment, and the processes that turn generated code into shipped software.
 
-> **Available now:** Gitly, twelve Git and project-workflow skills, plus a shared router. See [Available Skills](#available-skills).
+> **Available now:** three skill packages (Gitly for Git workflows, LLM for language-model features, and Security for AI application security), eleven standalone skills, and a shared router. See [Available Skills](#available-skills).
 
 ## Contents
 
@@ -77,17 +77,17 @@ cd vibe.md
 bash scripts/install.sh --list
 ```
 
-The catalog shows each skill and its group, including Gitly and the shared `vibe` router.
+The catalog shows each skill and its package (or `standalone`), plus the shared `vibe` router.
 
-**2. Install Gitly into your project**, choosing your agent:
+**2. Install a package or a skill into your project**, choosing your agent. For example, Gitly:
 
 ```bash
 bash scripts/install.sh --group gitly --agent <agent> --project /path/to/your/project
 ```
 
-`<agent>` is one of `claude-code`, `codex`, `cursor`, `gemini`, or `copilot`. Add `--dry-run` first to see exactly what will be written.
+`<agent>` is one of `claude-code`, `codex`, `cursor`, `gemini`, or `copilot`. Use `--group <package>` for a whole package or `--skill <name>` for a single skill, standalone or from a package. Add `--dry-run` first to see exactly what will be written.
 
-**3. Use it.** Follow the installer's reload instructions, then ask "Set up Gitly", "Save my progress", or "Is everything backed up?" All twelve skills are directly available to the agent. In Codex you can also invoke `$gitly-status` directly or `$vibe` to choose a workflow. Agents can select matching skills automatically. See [Supported coding agents](#supported-coding-agents) for each agent's details.
+**3. Use it.** Follow the installer's reload instructions, then ask "Set up Gitly", "Save my progress", or "Is everything backed up?" All twelve Gitly skills are directly available to the agent. In Codex you can also invoke `$gitly-status` directly or `$vibe` to choose a workflow. Agents can select matching skills automatically. See [Supported coding agents](#supported-coding-agents) for each agent's details.
 
 ## Supported coding agents
 
@@ -139,12 +139,19 @@ Avoid installing the same skill into several directories that one agent reads. G
 
 ## Available Skills
 
-| Group | Skills | Install |
+| Package | Skills | Install |
 | --- | --- | --- |
-| [Gitly](skills/gitly/README.md) | 12 workflows for setup, status, checks, saving, history, comparison, recovery, branches, merging, GitHub connection, sync, and preferences | `--group gitly` |
-| Shared | `vibe`, the router for installed groups | Included automatically |
+| [Gitly](skills/gitly/README.md) | 12 Git and GitHub workflows: setup, status, checks, saving, history, comparison, recovery, branches, merging, GitHub connection, sync, and preferences | `--group gitly` |
+| [LLM](skills/llm/README.md) | 3 skills for building and checking features that use language models: evaluations, prompt review, and model migration | `--group llm` |
+| [Security](skills/security/README.md) | 2 skills for AI application security reviews and access-control regression tests | `--group security` |
+| Standalone | 11 single skills, from code hygiene and API contract checks to safe database migrations | `--skill <name>` |
+| Shared | `vibe`, the router for installed skills | Included automatically |
 
-Install one workflow with `--skill gitly-status` instead of installing the group.
+The full, always-current list with every skill's description is in
+[skills/README.md](skills/README.md#available-skills), generated from the skills
+themselves, and `bash scripts/install.sh --list` shows the same list in a terminal.
+
+Install one workflow from a package with `--skill <name>` (for example `--skill gitly-status`) instead of installing the whole package.
 Each installation includes the shared router. Group members are installed as flat,
 directly discoverable skill directories, with shared group documents installed once:
 
@@ -172,7 +179,7 @@ vibe.md/
 │   ├── README.md
 │   ├── _shared/
 │   │   └── vibe/SKILL.md          # Router installed with every selection
-│   ├── gitly/                    # Installable group
+│   ├── gitly/                    # Installable package (llm/ and security/ follow the same layout)
 │   │   ├── README.md
 │   │   ├── GITLY.md             # Shared operating contract
 │   │   ├── LICENSE

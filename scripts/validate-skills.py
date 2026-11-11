@@ -272,10 +272,8 @@ SUSPICIOUS_PATTERNS = [
     (re.compile(r"\beval\s+\"?\$\("), "evaluates generated shell code"),
     (re.compile(r"\brm\s+-[a-zA-Z]*r[a-zA-Z]*f[a-zA-Z]*\s+(?:/|~|\$HOME)(?:\s|$)"), "recursively removes a system or home directory"),
 ]
-PACKAGE_METADATA_KEYS = {"title", "summary", "category", "maintainers"}
-# The categories the website lists; any other value is shown under Productivity there.
-# Keep in sync with SKILL_CATEGORIES in the website (src/types/skill.ts).
-CATEGORIES = ("Version Control", "Testing", "Debugging", "Deployment", "Documentation", "Security", "Productivity")
+PACKAGE_METADATA_KEYS = {"title", "summary", "category", "categories", "maintainers"}
+from categories import CATEGORIES
 # Keep package text short enough to fit a catalog card; the website enforces looser limits as a backstop.
 PACKAGE_TEXT_LIMITS = {"title": 80, "summary": 400, "category": 40}
 MAX_MAINTAINERS = 10
@@ -353,6 +351,7 @@ def check_package_metadata(group_dir, report):
     """Validate the optional frontmatter of skills/<package>/README.md."""
     readme = group_dir / "README.md"
     if not readme.is_file() or readme.is_symlink():
+        report.error(display_path(group_dir), "a skill group needs a README.md whose frontmatter sets 'categories'.")
         return
     where = display_path(readme)
     try:
@@ -361,6 +360,7 @@ def check_package_metadata(group_dir, report):
         report.error(where, "README.md must be UTF-8 encoded text.")
         return
     if not text.startswith("---"):
+        report.error(where, "README.md needs frontmatter that sets 'categories'.")
         return
     try:
         frontmatter, _ = split_frontmatter(text)
@@ -374,6 +374,7 @@ def check_package_metadata(group_dir, report):
     for key in sorted(set(data) - PACKAGE_METADATA_KEYS):
         report.error(where, "unknown package field '{}'. Allowed: {}.".format(key, ", ".join(sorted(PACKAGE_METADATA_KEYS))))
     check_package_text(where, data, PACKAGE_TEXT_LIMITS, report)
+    check_categories(where, data, report)
     check_maintainers(where, data.get("maintainers", []), "'maintainers'", "a list of GitHub usernames", report)
 
 
@@ -400,9 +401,26 @@ def check_maintainers(where, maintainers, name, shape, report):
         report.error(where, "{} lists {} people; the maximum is {}.".format(name, len(maintainers), MAX_MAINTAINERS))
 
 
+def check_categories(where, data, report):
+    """Every package must choose its categories, so the website can list it where people look."""
+    if "categories" not in data:
+        report.error(where, "'categories' is required. Choose one to three from: {}.".format(", ".join(CATEGORIES)))
+        return
+    value = data["categories"]
+    if value is None or (isinstance(value, str) and not value.strip()):
+        report.error(where, "'categories' is empty. Choose one to three from: {}.".format(", ".join(CATEGORIES)))
+        return
+    if not isinstance(value, str):
+        report.error(where, "'categories' must be a comma-separated string.")
+        return
+    items = [item.strip() for item in value.split(",")]
+    if not 1 <= len(items) <= 3 or len(set(items)) != len(items) or any(item not in CATEGORIES for item in items):
+        report.error(where, "'categories' must contain one to three distinct categories from: {}.".format(", ".join(CATEGORIES)))
+
+
 def check_standalone_metadata(skill_md, data, report):
     """A standalone skill is a package of one. It describes itself under 'metadata' in its
-    own frontmatter, using the same fields as a package README (all optional):
+    own frontmatter, using the same fields as a package README ('categories' is required):
 
         metadata:
           category: Security
@@ -411,10 +429,12 @@ def check_standalone_metadata(skill_md, data, report):
     Agent Skills metadata values are strings, so the maintainers are one comma-separated string.
     The title and summary come from the name and description unless 'title' is set."""
     metadata = data.get("metadata") if isinstance(data, dict) else None
-    if not isinstance(metadata, dict):
-        return
     where = display_path(skill_md)
+    if not isinstance(metadata, dict):
+        report.error(where, "add a 'metadata' block with 'categories' (and your GitHub username under 'maintainers').")
+        return
     check_package_text(where, metadata, ("title", "category"), report, prefix="metadata.")
+    check_categories(where, metadata, report)
     category = metadata.get("category")
     if isinstance(category, str) and category.strip() and category not in CATEGORIES:
         report.error(where, "'metadata.category' is '{}'. Use one of: {}.".format(category, ", ".join(CATEGORIES)))

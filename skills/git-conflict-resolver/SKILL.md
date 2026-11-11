@@ -4,7 +4,7 @@ description: Helps developers understand, investigate, and safely resolve Git me
 license: MIT
 metadata:
   author: Faigy-Rosenfeld
-  category: Version Control
+  categories: Version Control
   title: Git Conflict Resolver
 ---
 

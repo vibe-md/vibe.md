@@ -113,9 +113,14 @@ class GeneratedCaseTests(unittest.TestCase):
     def write_skill(self, name, frontmatter=None, body="# Skill\n\nInstructions.\n"):
         skill_dir = self.skills / name
         skill_dir.mkdir(parents=True)
+        if "/" not in name and frontmatter is not None and "metadata:" not in frontmatter:
+            frontmatter += "metadata:\n  categories: Testing\n"
+        group = skill_dir.parent
+        if group != self.skills and group.name != "_shared" and not (group / "README.md").exists():
+            (group / "README.md").write_text("---\ncategories: Testing\n---\n\n# {}\n".format(group.name))
         if frontmatter is None:
             frontmatter = (
-                "name: {}\ndescription: A generated skill used by the vibe.md validator tests.\n".format(name)
+                "name: {}\ndescription: A generated skill used by the vibe.md validator tests.\nmetadata:\n  categories: Testing\n".format(name)
             )
         (skill_dir / "SKILL.md").write_text("---\n{}---\n\n{}".format(frontmatter, body))
         return skill_dir
@@ -141,7 +146,7 @@ class GeneratedCaseTests(unittest.TestCase):
             with self.subTest(name=name):
                 shutil.rmtree(str(self.skills))
                 self.skills.mkdir()
-                frontmatter = "name: {}\ndescription: A generated skill used by the vibe.md validator tests.\n".format(name)
+                frontmatter = "name: {}\ndescription: A generated skill used by the vibe.md validator tests.\nmetadata:\n  categories: Testing\n".format(name)
                 self.write_skill("some-dir", frontmatter=frontmatter)
                 result = run_validator("--skills-dir", str(self.skills))
                 self.assertEqual(result.returncode, 1, result.stdout)
