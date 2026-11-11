@@ -269,7 +269,7 @@ class CheckContributionTests(unittest.TestCase):
         result = self.run_check("--base", "HEAD", "--pr-author", "NewComer")
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assertNotIn("add your GitHub username", result.stdout)
-        self.assertIn("skills/demo/README.md credits NewComer for demo-two.", result.stdout)
+        self.assertIn("`skills/demo/README.md` credits NewComer for `demo-two`.", result.stdout)
 
     def test_new_package_skill_by_package_maintainer_is_quiet(self):
         self.package_repo()
@@ -293,6 +293,20 @@ class CheckContributionTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assertNotIn("add your GitHub username", result.stdout)
         self.assertNotIn("not a login", result.stdout)
+
+    def test_author_with_a_trailing_newline_is_ignored(self):
+        self.package_repo()
+        self.add_package_skill()
+        result = self.run_check("--base", "HEAD", "--pr-author", "newcomer\n")
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertNotIn("add your GitHub username", result.stdout)
+
+    def test_maintainers_that_is_not_a_list_reports_instead_of_crashing(self):
+        self.package_repo()
+        self.add_package_skill(maintainers="5")
+        result = self.run_check("--base", "HEAD", "--pr-author", "newcomer")
+        self.assertNotIn("Traceback", result.stderr)
+        self.assertIn("add your GitHub username (newcomer)", result.stdout)
 
     def test_skill_renamed_inside_its_package_does_not_ask_for_credit(self):
         self.package_repo()

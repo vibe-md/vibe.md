@@ -75,7 +75,8 @@ jobs:
 
   # A plain-language report on the Pull Request's changes, in the job summary and as
   # annotations. Fixed rules only: no AI, no network, no secrets, nothing posted. It
-  # fails only on clear-cut problems (validator errors, hidden characters, secrets).
+  # fails only on clear-cut problems (validator errors, hidden characters, secrets, and a
+  # package skill missing from its package README).
   contribution-check:
     name: Contribution check
     if: github.event_name == 'pull_request'
