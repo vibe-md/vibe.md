@@ -7,7 +7,7 @@ Thank you for helping build vibe.md. This guide covers everything you need to ad
 | I want to... | Do this |
 | --- | --- |
 | Improve an existing skill | Edit its `SKILL.md` and open a Pull Request. |
-| Add a skill to an existing package | Add `skills/<package>/<package>-<skill>/SKILL.md`. See [Adding a skill](#adding-a-skill). |
+| Add a skill to an existing package | Add `skills/<package>/<package>-<skill>/SKILL.md`, then add your username and your skill to the package's `README.md`. See [Adding a skill](#adding-a-skill). |
 | Add a new package | Add `skills/<package>/README.md` and at least one skill. See [Creating a new package](#creating-a-new-package). |
 | Add a single skill on its own | Add `skills/<skill-name>/SKILL.md`. It is published as a package of one skill. |
 | Find out what happens after my PR | See [Review and publication](#review-and-publication). |
@@ -116,9 +116,14 @@ Key rules:
 2. **Pick a name.** Lowercase letters, digits, and single hyphens, up to 64 characters, starting with the package name, for example `gitly-branches` or `security-audit`. Installation puts every package's skills into one agent directory, so the prefix keeps names unique (the validator warns when it is missing). Prefer clear, descriptive names over clever ones.
 3. **Create the directory** `skills/<package>/<package>-<skill>/` and add `SKILL.md`. A skill with no siblings may also live on its own as `skills/<skill-name>/SKILL.md`; it is published as a package of one skill, and its name needs no prefix.
 4. **Add optional resources** (`scripts/`, `references/`, `assets/`) only if the skill needs them.
-5. **Validate and test** as described below.
-6. **Check your skill.** Ask your agent "check my skill before I open a PR". It follows [`docs/skill-contribution-check/SKILL.md`](docs/skill-contribution-check/SKILL.md) and tells you what to fix ([details](#check-your-skill)).
-7. **Open a Pull Request.**
+5. **Update the package README** (only when you add a skill to a package that already exists). In the same Pull Request, edit `skills/<package>/README.md`:
+   - add your GitHub username, without the @, to `maintainers`, keeping the names already there: `maintainers: [octocat, your-github-username]`;
+   - add a row for your skill to the README's skills table: its name and what it does.
+
+   The website credits a package's `maintainers` on the package and on each of its skills, so this is how your name appears. You do not need approval from the package's existing maintainers: a vibe.md maintainer reviews every Pull Request. The contribution check fails if the README does not mention your skill, and warns if your username is not in `maintainers`.
+6. **Validate and test** as described below.
+7. **Check your skill.** Ask your agent "check my skill before I open a PR". It follows [`docs/skill-contribution-check/SKILL.md`](docs/skill-contribution-check/SKILL.md) and tells you what to fix ([details](#check-your-skill)).
+8. **Open a Pull Request.**
 
 A skill contribution should stay inside its standalone skill or group directory. If you think the tooling needs to change to support your skill, open an issue first so we can keep the infrastructure generic.
 
@@ -406,7 +411,7 @@ In a fork, add vibe.md as `upstream` once: `git remote add upstream https://gith
 2. Commit your changes with a clear message, for example `Add release-notes skill`.
 3. Push to your fork and open a Pull Request against `main`.
 4. Fill in the Pull Request template checklist. When your agent [checks your skill](#check-your-skill), it can fill in the template for you. It ticks only what it checked or you confirmed. It can also give you a link that opens the Pull Request with the description filled in.
-5. Wait for CI. The **Validate skills** workflow runs the validator, builds every package and the catalog, and runs the full test suite on Linux and macOS. If it fails, open the failed job; validation errors are also shown inline on the changed files. The **Contribution check** job adds a plain-language report to the job summary. It fails only on clear problems, such as validator errors, hidden characters, or secrets. Everything else is a warning to look at. The first time you contribute, a maintainer has to approve the workflow run before it starts.
+5. Wait for CI. The **Validate skills** workflow runs the validator, builds every package and the catalog, and runs the full test suite on Linux and macOS. If it fails, open the failed job; validation errors are also shown inline on the changed files. The **Contribution check** job adds a plain-language report to the job summary. It fails only on clear problems, such as validator errors, hidden characters, secrets, or a package skill that its package README does not mention. Everything else is a warning to look at. The first time you contribute, a maintainer has to approve the workflow run before it starts.
 6. Respond to review feedback by pushing more commits to the same branch. New commits require a fresh approval.
 7. A maintainer merges the Pull Request once CI passes and the review is approved. **Contributors cannot merge their own Pull Requests.**
 

@@ -83,8 +83,13 @@ explicit and durable, create a `maintainers` team (**Organization → Teams**) a
 who may merge to it.
 
 **CODEOWNERS** does nothing by itself. It is only enforced when "Require review from
-Code Owners" is on. To add a package maintainer, add their username to the package
-line in `.github/CODEOWNERS` and to `maintainers` in the package README.
+Code Owners" is on. To let someone review a package, add their username to the package
+line in `.github/CODEOWNERS`. Only maintainers change it.
+
+**`maintainers` in a package README is credit, not access.** The website shows those
+names on the package and on each of its skills. A contributor who adds a skill to an
+existing package adds their own username there in the same Pull Request. The package's
+existing maintainers do not need to approve it.
 
 ## Actions settings
 
@@ -145,6 +150,11 @@ contribution read the `description` (will an agent pick it at the right time?),
 every instruction that changes files or runs commands, and every `scripts/` file.
 The validator marks the places that need attention as warnings. Merge only when
 you would be comfortable with every user running the skill.
+
+For a skill added to an existing package, check that the package README lists the skill
+and that the person who wrote it is in the README's `maintainers`. The contribution check
+fails when the row is missing and warns when the Pull Request's author is not listed. If
+you open a Pull Request for someone else, credit the person who wrote the skill.
 
 ## Before relying on automatic publication
 

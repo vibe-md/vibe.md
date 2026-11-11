@@ -104,9 +104,12 @@ jobs:
           # Untrusted text: passed through the environment and written to a file, never
           # interpolated into the script.
           PR_BODY: ${{ github.event.pull_request.body }}
+          # The author's GitHub username, so a skill added to an existing package can be
+          # checked against that package's maintainers. Also passed only through the environment.
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
         run: |
           printf '%s' "$PR_BODY" > "$RUNNER_TEMP/pr-body.md"
-          python scripts/check-contribution.py --base HEAD^1 --pr-body-file "$RUNNER_TEMP/pr-body.md"
+          python scripts/check-contribution.py --base HEAD^1 --pr-body-file "$RUNNER_TEMP/pr-body.md" --pr-author "$PR_AUTHOR"
 
   # Single, stable check to require in branch protection, independent of the matrix.
   ci-passed:

@@ -53,6 +53,24 @@ TEMPLATE_BODY = textwrap.dedent("""\
     """)
 
 
+PACKAGE_SKILL = GOOD_SKILL.replace("    metadata:\n      categories: Documentation\n      maintainers: octocat\n", "")
+
+PACKAGE_README = textwrap.dedent("""\
+    ---
+    title: Demo
+    summary: Demo skills.
+    categories: Documentation
+    maintainers: [owner]
+    ---
+
+    # Demo
+
+    | Skill | What it does |
+    | --- | --- |
+    | `demo-one` | Writes demo notes. |
+    """)
+
+
 class CheckContributionTests(unittest.TestCase):
     def setUp(self):
         self.tmp = Path(tempfile.mkdtemp())
@@ -209,6 +227,110 @@ class CheckContributionTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assertIn("Checked: `skills/new-skill`", result.stdout)
         self.assertNotIn("scripts/tool.py", result.stdout)
+
+    # A skill added to an existing package: listed in its README, and its author credited there.
+
+    def package_repo(self):
+        """A Git repository whose main has the `demo` package with one skill, `demo-one`."""
+        if shutil.which("git") is None:
+            self.skipTest("git is not installed")
+        self.write("skills/demo/README.md", PACKAGE_README)
+        self.write("skills/demo/demo-one/SKILL.md", PACKAGE_SKILL.replace("demo-skill", "demo-one"))
+        self.git = ["git", "-C", str(self.tmp), "-c", "user.name=Test", "-c", "user.email=test@example.com"]
+        subprocess.run(self.git + ["init", "-q"], check=True)
+        subprocess.run(self.git + ["add", "-A"], check=True)
+        subprocess.run(self.git + ["commit", "-q", "-m", "base"], check=True)
+
+    def add_package_skill(self, name="demo-two", row=True, maintainers="[owner]"):
+        self.write("skills/demo/{}/SKILL.md".format(name), PACKAGE_SKILL.replace("demo-skill", name))
+        readme = PACKAGE_README.replace("maintainers: [owner]", "maintainers: " + maintainers)
+        if row:
+            readme += "| `{}` | Writes more demo notes. |\n".format(name)
+        self.write("skills/demo/README.md", readme)
+
+    def test_new_package_skill_missing_from_readme_fails(self):
+        self.package_repo()
+        self.add_package_skill(row=False, maintainers="[owner, newcomer]")
+        result = self.run_check("--base", "HEAD", "--pr-author", "newcomer")
+        self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+        self.assertIn("`skills/demo/README.md`: `demo-two` is not mentioned in this package README", result.stdout)
+
+    def test_new_package_skill_by_unlisted_author_warns(self):
+        self.package_repo()
+        self.add_package_skill()
+        result = self.run_check("--base", "HEAD", "--pr-author", "newcomer")
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("add your GitHub username (newcomer) to `maintainers` in this README", result.stdout)
+        self.assertIn("so the website credits you for `demo-two`", result.stdout)
+
+    def test_new_package_skill_by_listed_author_is_credited(self):
+        self.package_repo()
+        self.add_package_skill(maintainers="[owner, newcomer]")
+        result = self.run_check("--base", "HEAD", "--pr-author", "NewComer")
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertNotIn("add your GitHub username", result.stdout)
+        self.assertIn("skills/demo/README.md credits NewComer for demo-two.", result.stdout)
+
+    def test_new_package_skill_by_package_maintainer_is_quiet(self):
+        self.package_repo()
+        self.add_package_skill()
+        result = self.run_check("--base", "HEAD", "--pr-author", "owner")
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertNotIn("add your GitHub username", result.stdout)
+
+    def test_without_an_author_only_the_readme_row_is_checked(self):
+        self.package_repo()
+        self.add_package_skill()
+        result = self.run_check("--base", "HEAD")
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertNotIn("add your GitHub username", result.stdout)
+        self.assertNotIn("not mentioned", result.stdout)
+
+    def test_invalid_author_is_ignored(self):
+        self.package_repo()
+        self.add_package_skill()
+        result = self.run_check("--base", "HEAD", "--pr-author", "not a login`")
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertNotIn("add your GitHub username", result.stdout)
+        self.assertNotIn("not a login", result.stdout)
+
+    def test_skill_renamed_inside_its_package_does_not_ask_for_credit(self):
+        self.package_repo()
+        subprocess.run(self.git + ["mv", "skills/demo/demo-one", "skills/demo/demo-first"], check=True)
+        self.write("skills/demo/demo-first/SKILL.md", PACKAGE_SKILL.replace("demo-skill", "demo-first"))
+        self.write("skills/demo/README.md", PACKAGE_README.replace("demo-one", "demo-first"))
+        result = self.run_check("--base", "HEAD", "--pr-author", "someone")
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertNotIn("add your GitHub username", result.stdout)
+
+    def test_skill_renamed_without_updating_the_readme_fails(self):
+        self.package_repo()
+        subprocess.run(self.git + ["mv", "skills/demo/demo-one", "skills/demo/demo-first"], check=True)
+        self.write("skills/demo/demo-first/SKILL.md", PACKAGE_SKILL.replace("demo-skill", "demo-first"))
+        result = self.run_check("--base", "HEAD", "--pr-author", "owner")
+        self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+        self.assertIn("`demo-first` is not mentioned", result.stdout)
+
+    def test_a_name_inside_a_longer_name_does_not_count_as_listed(self):
+        self.package_repo()
+        self.add_package_skill(name="demo-on", row=False)
+        result = self.run_check("--base", "HEAD")
+        self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+        self.assertIn("`demo-on` is not mentioned", result.stdout)
+
+    def test_new_package_is_left_to_the_new_package_checks(self):
+        if shutil.which("git") is None:
+            self.skipTest("git is not installed")
+        git = ["git", "-C", str(self.tmp), "-c", "user.name=Test", "-c", "user.email=test@example.com"]
+        subprocess.run(git + ["init", "-q"], check=True)
+        subprocess.run(git + ["add", "-A"], check=True)
+        subprocess.run(git + ["commit", "-q", "-m", "base"], check=True)
+        self.write("skills/demo/README.md", PACKAGE_README.replace("| `demo-one` | Writes demo notes. |\n", ""))
+        self.write("skills/demo/demo-one/SKILL.md", PACKAGE_SKILL.replace("demo-skill", "demo-one"))
+        result = self.run_check("--base", "HEAD", "--pr-author", "newcomer")
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertNotIn("not mentioned", result.stdout)
+        self.assertNotIn("add your GitHub username", result.stdout)
 
     def test_no_changes_warns_that_nothing_was_checked(self):
         if shutil.which("git") is None:
