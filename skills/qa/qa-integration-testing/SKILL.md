@@ -22,15 +22,17 @@ Verifies that multiple application components work correctly together by testing
 
 ## Step-by-Step Instructions
 
-1. **Locate Test Framework:** Identify the project's test runner, integration testing tools, and existing test execution commands.
+1. **Verify Target Environment:** Confirm with the user that the target environment is a dedicated test/staging system and **NOT production** before running integration tests, executing state-modifying requests (POST, PUT, DELETE), or seeding databases.
 
-2. **Map Component Interactions:** Identify the components involved in the integration, including APIs, databases, services, and shared interfaces.
+2. **Locate Test Framework:** Identify the project's test runner, integration testing tools, and existing test execution commands.
 
-3. **Prepare Test Environment:** Configure the required test infrastructure, such as a test database, local API server, or service containers. Ensure test data is isolated from production data.
+3. **Map Component Interactions:** Identify the components involved in the integration, including APIs, databases, services, and shared interfaces.
 
-4. **Configure Test Dependencies:** Use real implementations of the components whose integration is being tested. Mock only unrelated external services when necessary.
+4. **Prepare Test Environment:** Configure the required test infrastructure, such as a test database, local API server, or service containers. Ensure test data is strictly isolated from production data.
 
-5. **Implement Integration Tests:** Write tests covering:
+5. **Configure Test Dependencies:** Use real implementations of the components whose integration is being tested. Mock only unrelated external services when necessary.
+
+6. **Implement Integration Tests:** Write tests covering:
    - Successful communication between components.
    - Correct data exchange and transformations.
    - Database persistence and retrieval.
@@ -38,14 +40,14 @@ Verifies that multiple application components work correctly together by testing
    - Error handling and failure scenarios.
    - Transaction handling and consistency where applicable.
 
-6. **Manage Setup and Cleanup:** Initialize the required test environment and test data before execution. Clean up created records, connections, temporary resources, and containers after tests finish, including when a test fails.
+7. **Manage Setup and Cleanup:** Initialize the required test environment and test data before execution. Clean up created records, connections, temporary resources, and containers after tests finish, including when a test fails.
 
-7. **Execute & Verify:** Run the integration test suite and inspect the results. Verify that failures are caused by actual integration issues rather than incorrect test configuration.
+8. **Execute & Verify:** Run the integration test suite and inspect the results. Verify that failures are caused by actual integration issues rather than incorrect test configuration.
 
-8. **Stop Condition:** If integration tests fail because of an application bug, stop and report the failure, its affected components, and relevant evidence. Do NOT modify production logic or weaken test assertions without explicit user instructions.
+9. **Stop Condition:** If integration tests fail because of an application bug, stop and report the failure, its affected components, and relevant evidence. Do NOT modify production logic or weaken test assertions without explicit user instructions.
 
 ## Examples
 
 **User:** "Write integration tests for the user registration API."
 
-**Agent:** Identifies the API and database dependencies, configures an isolated test database, sends registration requests to the real API, verifies that user records are persisted correctly, tests duplicate registration and invalid input scenarios, and cleans up the test data afterward.
+**Agent:** Confirms that the target environment is not production, identifies the API and database dependencies, configures an isolated test database, sends registration requests to the test API, verifies that user records are persisted correctly, tests duplicate registration and invalid input scenarios, and cleans up test data afterward.
