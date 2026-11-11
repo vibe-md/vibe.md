@@ -2,7 +2,7 @@
 title: Security
 summary: AI application security reviews and local access-control regression tests.
 categories: Security, AI / Agents
-maintainers: [NoaGaler]
+maintainers: [NoaGaler, YaelTamari, talforsher]
 ---
 
 # Security
