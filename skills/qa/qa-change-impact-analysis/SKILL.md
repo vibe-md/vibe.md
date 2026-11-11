@@ -15,10 +15,21 @@ Analyzes `git diff` and project dependencies to detect potential side effects on
 - Evaluating code changes in shared utilities, state management, or common components.
 
 ## Step-by-Step Instructions
-1. **Trace Imports:** Inspect modified files and identify all dependent modules.
-2. **Map Risk Areas:** Identify secondary pages or components that rely on the modified logic.
-3. **Generate Risk Report:** Present a summary of affected user flows requiring verification.
+
+1. **Trace Imports:** Use search tools (e.g., `git grep`, `rg`, or IDE search) to list all files importing the modified module:
+
+   ```bash
+   rg "import.*from ['\"].*path/to/module['\"]"
+   ```
+
+2. **Map Dependents:** Inspect the output list to identify secondary components, routes, or utilities affected by the change.
+
+3. **Assess Risks:** Check for potential breaking changes in function signatures, state mutations, or side-effects.
+
+4. **Generate Risk Report:** Present a clear summary of dependent files and user flows that require targeted regression testing.
 
 ## Examples
+
 **User:** "I updated the form validation utility. What could break?"
-**Agent:** Traces code dependencies and highlights that Login and Signup forms share this utility and should be re-tested.
+
+**Agent:** Runs `rg` to find imports of `formValidation`, identifies that Login and Signup forms share it, and highlights those flows for regression testing.
