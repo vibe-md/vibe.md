@@ -93,6 +93,22 @@ Practical skills for building and checking features that use language models.
 - [llm-model-migration-check](llm/llm-model-migration-check/SKILL.md) — Plans a safe switch from one language model to another. Finds every model ID and model-specific setting in the project, checks the provider's current documentation for deprecations and API differences, compares eval results on the current and target models, and drafts a rollout and rollback plan. Use when a provider retires a model, when the team wants to upgrade or change models, or when model IDs are scattered through the code. Does not change production settings or deploy.
 - [llm-prompt-review](llm/llm-prompt-review/SKILL.md) — Reviews the prompts and prompt templates behind an LLM feature for a clear task, an output format that matches the code that parses it, handling of edge cases, and testability, then proposes specific edits. Use when the user asks to review or improve a prompt, before merging a prompt change, or when an LLM feature gives inconsistent or unparseable output. Read-only unless the user asks for edits. Not for prompt-injection or other security review.
 
+### [qa](qa/)
+
+Complete quality assurance, test strategy, automated testing, and regression analysis package.
+
+- [qa-accessibility-testing](qa/qa-accessibility-testing/SKILL.md) — Adds automated axe-core checks (contrast, alt text, ARIA) to UI tests. Use when auditing web pages for automated WCAG rules. Keyboard and screen-reader checks remain manual.
+- [qa-api-testing](qa/qa-api-testing/SKILL.md) — Generates automated API tests to validate endpoints. Use when testing RESTful APIs and HTTP responses. Not for frontend/backend contract validation (use api-check) or access control testing (use security-access-regression).
+- [qa-bug-triage](qa/qa-bug-triage/SKILL.md) — Investigates failing tests and generates bug reports. Use when analyzing logs, stack traces, or CI failures. Not for planning new features (use qa-test-strategy).
+- [qa-change-impact-analysis](qa/qa-change-impact-analysis/SKILL.md) — Performs impact analysis on code changes to identify logic regressions. Use when evaluating side effects of modified shared components. Not for checking pixel-perfect UI differences (use qa-visual-regression).
+- [qa-ci-cd-pipelines](qa/qa-ci-cd-pipelines/SKILL.md) — Configures automated CI/CD pipelines. Use when automating test execution in GitHub Actions or GitLab CI. Not for writing the test scripts themselves.
+- [qa-e2e-playwright](qa/qa-e2e-playwright/SKILL.md) — Writes automated End-to-End browser tests. Use when testing full user flows and UI interactions. Not for testing isolated backend functions.
+- [qa-integration-testing](qa/qa-integration-testing/SKILL.md) — Creates integration tests that verify interactions between application components, databases, APIs, and external services. Use when testing real component integrations in a controlled test environment. Not for isolated unit testing (use qa-unit-testing).
+- [qa-performance-testing](qa/qa-performance-testing/SKILL.md) — Sets up load and stress tests. Use when simulating high user traffic and benchmarking response times. Not for functional edge-case validation.
+- [qa-test-strategy](qa/qa-test-strategy/SKILL.md) — Analyzes requirements to generate test plans. Use when mapping out test scenarios for specific requirements. Not for writing the actual test code.
+- [qa-unit-testing](qa/qa-unit-testing/SKILL.md) — Creates unit tests for isolated functions and modules. Use when testing utility functions or pure logic in isolation with mocked dependencies. Not for test-first React component development (use test-first-react).
+- [qa-visual-regression](qa/qa-visual-regression/SKILL.md) — Configures visual regression testing to detect pixel differences. Use when baselining UI components or changing global styles. Not for testing business logic.
+
 ### [security](security/)
 
 AI application security reviews and local access-control regression tests.
