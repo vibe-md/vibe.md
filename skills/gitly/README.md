@@ -2,7 +2,7 @@
 title: Gitly
 summary: "Git and GitHub workflows for people who build with AI agents: save, compare, restore, branch, merge, and back up in everyday language."
 categories: Version Control
-maintainers: [NirGeron98, AdiBer1]
+maintainers: [NirGeron98]
 ---
 
 # Gitly

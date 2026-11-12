@@ -2,7 +2,7 @@
 title: Deploy
 summary: Take a site from "works on my computer" to a checked public web address, in plain language and with your approval at every step that matters.
 categories: Deployment, Frontend
-maintainers: [NirGeron98, AdiBer1]
+maintainers: [NirGeron98]
 ---
 
 # Deploy
