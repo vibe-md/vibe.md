@@ -6,7 +6,6 @@ compatibility: Needs read and write access to the project, a Google Cloud projec
 metadata:
   collection: vibe.md
   group: google
-  author: NirGeron98
 ---
 
 # Google: Sheets as a simple database or form backend

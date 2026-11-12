@@ -6,7 +6,6 @@ compatibility: Needs read and write access to the project and a Google account. 
 metadata:
   collection: vibe.md
   group: google
-  author: NirGeron98
 ---
 
 # Google: Analytics (GA4) with consent

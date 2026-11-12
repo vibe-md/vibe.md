@@ -6,7 +6,6 @@ compatibility: Needs read and write access to the project, a Google account, and
 metadata:
   collection: vibe.md
   group: google
-  author: NirGeron98
 ---
 
 # Google: Search Console, sitemap and indexing

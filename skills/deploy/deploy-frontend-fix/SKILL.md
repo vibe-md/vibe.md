@@ -6,7 +6,6 @@ compatibility: Needs read access to the project, Git, network access, and access
 metadata:
   collection: vibe.md
   group: deploy
-  author: NirGeron98
 ---
 
 # Deploy: fix a failed build or deploy

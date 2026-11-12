@@ -2,7 +2,7 @@
 title: LLM Engineering
 summary: Practical skills for building and checking features that use language models.
 categories: AI / Agents, Testing
-maintainers: [NirGeron98]
+maintainers: [NirGeron98, AdiBer1]
 ---
 
 # LLM Engineering

@@ -6,7 +6,6 @@ compatibility: Needs read access to the project. Reading prices and terms needs 
 metadata:
   collection: vibe.md
   group: deploy
-  author: NirGeron98
 ---
 
 # Deploy: choose a host for a website

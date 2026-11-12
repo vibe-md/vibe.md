@@ -6,7 +6,6 @@ compatibility: Needs Git, network access, the project's build tools (usually Nod
 metadata:
   collection: vibe.md
   group: deploy
-  author: NirGeron98
 ---
 
 # Deploy: update a live site

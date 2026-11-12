@@ -6,7 +6,6 @@ compatibility: Needs read access to the project and Git. Uses the Google Cloud c
 metadata:
   collection: vibe.md
   group: google
-  author: NirGeron98
 ---
 
 # Google: keys check (read-only)

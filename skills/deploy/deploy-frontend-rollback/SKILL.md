@@ -6,7 +6,6 @@ compatibility: Needs network access and the user logged in to their hosting serv
 metadata:
   collection: vibe.md
   group: deploy
-  author: NirGeron98
 ---
 
 # Deploy: roll back a bad deploy
