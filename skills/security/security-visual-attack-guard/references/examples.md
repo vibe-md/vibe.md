@@ -1,7 +1,7 @@
 # Multimodal Visual Prompt Injection
 ## Attack Patterns, Vulnerable Implementations, and Secure Design Examples
 
-This reference supports the `multimodal-visual-attack-guard` security audit.
+This reference supports the `security-visual-attack-guard` security audit.
 
 It provides representative attack patterns, insecure implementation examples, secure architectural patterns, and remediation guidance.
 
@@ -250,6 +250,50 @@ Bind approval to the exact action, normalized arguments, authenticated actor, an
 
 Revalidate before execution.
 
+
+### Attack 8: Malicious Email Attachments and Document Processing
+
+**Description**
+
+An AI application analyzes incoming emails and their attachments, including PDFs, scanned documents, screenshots, or rendered document pages.
+
+An attacker embeds instructions inside an attachment that attempt to influence the vision model or downstream agent.
+
+**Example**
+
+A suspicious email contains a PDF attachment with an apparently legitimate invoice. A hidden instruction in the rendered document attempts to make the AI assistant forward confidential emails, modify account records, or approve a payment.
+
+**Potential vulnerable flow**
+
+    Incoming Email
+        -> Attachment Extraction
+        -> PDF Rendering
+        -> OCR / Vision Model
+        -> Document Summary
+        -> Agent Memory or Retrieval
+        -> Email / Account / Payment Tools
+
+**What to inspect**
+
+- Whether email attachments and rendered document pages are treated as untrusted input.
+- Whether OCR output and vision-generated summaries preserve their original provenance.
+- Whether attachment-derived instructions can influence privileged prompts or agent memory.
+- Whether summaries or extracted fields can trigger email forwarding, account changes, or financial operations.
+- Whether backend authorization independently validates every sensitive action.
+
+**Remediation**
+
+Treat email attachments, rendered pages, OCR output, and all derived summaries as untrusted data.
+
+Preserve provenance and trust metadata across processing stages.
+
+Require independent application-side authorization for external communications, account modifications, and financial operations.
+
+**Scope limitation**
+
+This pattern concerns the security of an AI application's email and attachment-processing pipeline. It does not provide standalone phishing classification, malware scanning, or URL reputation analysis.
+
+
 ---
 
 ## 3. Secure Design Patterns
@@ -259,6 +303,10 @@ Revalidate before execution.
 **Objective**
 
 Prevent application-generated instructions from being dynamically modified by extracted image content.
+
+The original image, rendered document pages, OCR output, captions, extracted fields, and summaries are all untrusted inputs or derived data.
+
+Visual prompt injection does not require an OCR stage. A vision-enabled model may interpret malicious instructions directly from image content.
 
 **Illustrative implementation**
 
@@ -280,6 +328,12 @@ Prevent application-generated instructions from being dynamically modified by ex
             "task": "Extract the invoice total and merchant.",
             "untrusted_visual_data": extracted_text
         }
+
+**Implementation note**
+
+This dictionary is illustrative application data, not a guaranteed model-enforced trust boundary. Verify how the actual SDK or framework serializes and maps these fields into model messages.
+
+The application must enforce authorization independently of any trust labels or instructions supplied to the model.
 
 **Security properties**
 
@@ -326,6 +380,10 @@ Prevent untrusted text from changing the structure of application-generated mess
 **Limitation**
 
 XML encoding does not neutralize semantic prompt injection. The model may still interpret malicious natural-language instructions as meaningful content.
+
+Serialization protects message structure; it does not establish a security boundary between trusted instructions and untrusted natural-language meaning.
+
+Do not report XML escaping, JSON serialization, or prompt delimiters as sufficient protection against visual prompt injection.
 
 ### Pattern C: Preserve Provenance and Trust Metadata
 

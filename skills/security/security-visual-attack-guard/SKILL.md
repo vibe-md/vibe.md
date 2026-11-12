@@ -1,19 +1,19 @@
 ---
-name: multimodal-visual-attack-guard
-description: Audits multimodal AI applications for indirect visual prompt injection vulnerabilities by tracing untrusted image-derived data, evaluating trust boundaries, reviewing downstream model interactions, and verifying independent authorization controls for sensitive tool execution.
+name: security-visual-attack-guard
+description: Read-only security audit of AI applications that process images, screenshots, scanned documents, PDFs, email attachments, OCR output, or video frames through vision-enabled models. Traces whether malicious instructions embedded in visual or extracted content can cross trust boundaries into privileged prompts, memory, retrieval, or tool calls, and verifies independent authorization of sensitive actions. Use when reviewing an application's image, document, receipt, invoice, scanned email, or attachment-processing pipeline for indirect visual prompt injection. Not for text-only prompt injection or general AI agent security (use security-agent-guard), image privacy and metadata handling (use security-media-privacy), or standalone phishing, malware, and suspicious-email triage.
 metadata:
-  collection: vibe-md
+  collection: vibe.md
   group: security
   author: Yael Tamari
 ---
 
-# Multimodal Visual Attack Guard
+# Security Visual Attack Guard
 
 ## Purpose
 
 Identify and assess security weaknesses in applications that process untrusted visual inputs using Vision-enabled Large Language Models (VLLMs).
 
-The skill focuses on Indirect Visual Prompt Injection (VPI), where malicious or misleading instructions embedded in images, screenshots, scanned documents, video frames, or other visual inputs influence an AI system's behavior.
+The skill focuses on Indirect Visual Prompt Injection (VPI), where malicious or misleading instructions embedded in images, screenshots, scanned documents, rendered PDFs, email attachments, or video frames influence an AI system's behavior.
 
 The audit evaluates whether an application:
 
@@ -32,24 +32,29 @@ Prompt injection cannot be reliably eliminated through prompt wording or input f
 Use this skill when reviewing:
 
 - Applications that accept user-uploaded images, screenshots, scanned documents, or photographs.
-- Vision-enabled AI agents that analyze images or video streams.
+- Vision-enabled AI agents that analyze images, rendered PDF pages, email attachment previews, or video streams.
 - OCR pipelines that pass extracted text to an LLM.
 - Document processing, receipt scanning, invoice extraction, and identity verification systems.
 - Multimodal RAG systems that store or retrieve image-derived content.
 - AI applications where visual analysis can influence tool calls, database operations, external APIs, or business decisions.
 - Systems that transfer image-derived information between multiple models or processing stages.
 
-## When Not to Use
+- Email ingestion systems that convert incoming messages, HTML content, or attachments into images, OCR text, or model-readable documents.
+- AI-powered document review systems that process contracts, legal notices, financial statements, invoices, or scanned correspondence.
+- Agents that inspect potentially suspicious documents or email attachments and can subsequently trigger external actions, update records, or communicate with users.
 
-Do not use this skill as the primary audit method for:
+**When Not to Use:**
 
-- Text-only applications without visual input processing.
+- Text-only applications or plain-text prompt injection without visual or OCR input processing (use `security-agent-guard`).
+- Image privacy audits such as unblurred faces, EXIF/GPS metadata stripping, or temporary media cleanup (use `security-media-privacy`).
 - Traditional image-processing systems that do not interact with LLMs.
-- General-purpose malware analysis or binary steganography detection.
+- General-purpose malware analysis, phishing triage of individual end-user emails, or binary steganography detection.
 - Standalone model evaluation without access to the application integration code.
-- General infrastructure security audits unrelated to multimodal input handling.
 
-Other specialized security skills may be required for these areas.
+## Prerequisites
+
+- Read-only access to the application source code and configuration files.
+- No code execution, live endpoints, credentials, or external network access required.
 
 ## Scope and Safety
 
@@ -76,9 +81,9 @@ Visual Prompt Injection occurs when an attacker embeds instructions or adversari
 Potential attack surfaces include:
 
 - Visible or partially obscured text.
-- Low-contrast or visually inconspicuous text.
-- Text embedded in screenshots, documents, or photographs.
-- Instructions distributed across multiple image regions.
+- Low-contrast, white-on-white, or visually inconspicuous text in invoices, receipts, or email screenshots.
+- Text embedded in screenshots, scanned PDFs, or photographs.
+- Instructions distributed across multiple image regions or document pages.
 - Images containing misleading contextual information.
 - Visual content processed through OCR or image-captioning services.
 - Video frames containing adversarial instructions.
@@ -91,10 +96,10 @@ All user-provided visual content and information derived from it must be treated
 
 Untrusted data includes:
 
-- Original image inputs.
+- Original image inputs and rendered PDF/document pages.
 - OCR output.
 - Vision-generated descriptions and captions.
-- Extracted document fields.
+- Extracted document or invoice fields.
 - Model-generated summaries of visual content.
 - Embeddings and retrieved content derived from images.
 - Intermediate outputs passed between AI models.
@@ -128,7 +133,7 @@ Identify the application's visual input sources and model integrations.
 Inspect for:
 
 - Vision-capable model SDKs and APIs.
-- Image upload handlers.
+- Image upload handlers and PDF-to-image / email-attachment rendering pipelines.
 - Image URLs and base64 image payloads.
 - OCR and document extraction libraries.
 - Image captioning and classification services.
@@ -181,7 +186,7 @@ Trace every processing stage between the original image and the model or executi
 Inspect:
 
 - OCR extraction.
-- Image preprocessing.
+- Image preprocessing and PDF rasterization.
 - Metadata handling.
 - EXIF processing.
 - Image-to-text conversion.
@@ -334,6 +339,47 @@ Every confirmed finding must include:
 Do not fabricate line numbers, execution paths, tool permissions, or missing controls.
 
 If a control cannot be verified, report it as an audit limitation rather than a confirmed vulnerability.
+
+## Examples
+
+### Example 1: Auditing a Receipt or Invoice Vision Pipeline
+
+**User Request:**
+"Check if uploaded receipt or invoice images could inject instructions into our refund agent."
+
+**Audit Action:**
+1. Traces the image upload handler (`routes/receipts.py`) to the VLLM call (`services/vision_parser.py`).
+2. Checks whether extracted fields or image contents are separated from system instructions and whether `issue_refund` verifies user permissions and approval outside the model.
+3. Produces the structured `Multimodal Visual Attack Security Audit` report citing exact file paths, line numbers, severity, and backend authorization fixes.
+
+### Example 2: Auditing an OCR and Email-Attachment Summarizer
+
+**User Request:**
+"Review our document processing pipeline that converts PDF attachments to images and sends them to Gemini."
+
+**Audit Action:**
+1. Inspects the PDF-to-image renderer and prompt builder to ensure rendered pages and OCR output are tagged as untrusted data.
+2. Verifies that summaries saved to vector memory preserve untrusted provenance and cannot trigger email-forwarding or account tools automatically.
+3. Reports confirmed findings and unverified boundaries clearly without modifying code or executing files.
+
+
+### Example 3: Auditing an AI-Powered Suspicious Email and Attachment Processing Pipeline
+
+**User Request:**
+
+"Review our AI security assistant that analyzes suspicious emails and PDF attachments. Check whether hidden instructions inside scanned attachments or email screenshots could manipulate the model or trigger unauthorized actions."
+
+**Audit Action:**
+
+1. Traces incoming email ingestion, attachment extraction, PDF rendering, OCR, and vision-model processing.
+2. Verifies that email bodies, attachment contents, and extracted instructions remain untrusted throughout prompt construction, summarization, memory, and retrieval.
+3. Checks whether model-generated recommendations or tool calls can trigger email forwarding, external communication, account changes, or other sensitive operations without independent authorization.
+4. Produces an evidence-based security report with affected components, trust-boundary violations, severity, and remediation recommendations.
+
+**Scope Boundary:**
+
+This example audits the application's handling of suspicious email content. It does not perform standalone phishing classification, malware scanning, URL reputation checks, or declare an individual email safe.
+
 
 ## Required Audit Output
 
