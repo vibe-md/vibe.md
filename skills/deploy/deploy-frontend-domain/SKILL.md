@@ -6,7 +6,6 @@ compatibility: Needs network access, a site already deployed on a supported host
 metadata:
   collection: vibe.md
   group: deploy
-  author: NirGeron98
 ---
 
 # Deploy: connect a custom domain

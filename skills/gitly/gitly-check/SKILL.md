@@ -5,7 +5,6 @@ license: MIT
 metadata:
   collection: vibe.md
   group: gitly
-  author: NirGeron98
   source: https://github.com/vibe-md/vibe.md
   upstream: https://github.com/NirGeron98/Gitly
   upstream-commit: fe33bbae13552ed8973c6949b1d21e1ce2b746c9

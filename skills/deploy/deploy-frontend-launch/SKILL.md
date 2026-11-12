@@ -6,7 +6,6 @@ compatibility: Needs Git, network access, and an account on the host (Vercel, Ne
 metadata:
   collection: vibe.md
   group: deploy
-  author: NirGeron98
 ---
 
 # Deploy: first frontend launch

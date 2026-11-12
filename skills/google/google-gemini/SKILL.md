@@ -6,7 +6,6 @@ compatibility: Needs read and write access to the project, an app with server co
 metadata:
   collection: vibe.md
   group: google
-  author: NirGeron98
 ---
 
 # Google: Gemini in your app, key on the server

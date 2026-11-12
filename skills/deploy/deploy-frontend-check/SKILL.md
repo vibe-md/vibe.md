@@ -6,7 +6,6 @@ compatibility: Needs read access to the project, Git, and the project's own tool
 metadata:
   collection: vibe.md
   group: deploy
-  author: NirGeron98
 ---
 
 # Deploy: frontend readiness check

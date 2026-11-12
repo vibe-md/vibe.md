@@ -6,7 +6,6 @@ compatibility: Needs read access to the project, network access, and the user lo
 metadata:
   collection: vibe.md
   group: deploy
-  author: NirGeron98
 ---
 
 # Deploy: environment variables, done safely

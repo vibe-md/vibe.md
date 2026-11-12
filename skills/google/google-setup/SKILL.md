@@ -6,7 +6,6 @@ compatibility: Needs a Google account and a web browser. The user does the conso
 metadata:
   collection: vibe.md
   group: google
-  author: NirGeron98
 ---
 
 # Google: set up the project and the budget

@@ -5,7 +5,6 @@ compatibility: Needs the project's source code and a way to run its LLM feature 
 metadata:
   collection: vibe.md
   group: llm
-  author: NirGeron98
 ---
 
 # LLM eval builder

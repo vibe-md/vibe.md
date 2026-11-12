@@ -6,7 +6,6 @@ compatibility: Needs read and write access to the project, Node.js, and network 
 metadata:
   collection: vibe.md
   group: google
-  author: NirGeron98
 ---
 
 # Google: Firebase with safe rules

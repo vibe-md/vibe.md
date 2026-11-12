@@ -5,7 +5,6 @@ compatibility: Needs the project's source code. Reviewing a prompt needs no netw
 metadata:
   collection: vibe.md
   group: llm
-  author: NirGeron98
 ---
 
 # LLM prompt review

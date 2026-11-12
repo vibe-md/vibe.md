@@ -5,7 +5,6 @@ compatibility: Needs the project's source code and configuration. Checking curre
 metadata:
   collection: vibe.md
   group: llm
-  author: NirGeron98
 ---
 
 # LLM model migration check
