@@ -1,6 +1,6 @@
 ---
 name: gitly-check
-description: Assess whether the current project still works and identify failures after code or AI changes. Use for broad reports of breakage, errors, failed builds or tests, unexpected behavior, or uncertainty about project health; use restore instead only when the user explicitly wants to go back.
+description: Assess whether the current project still works and identify failures after code or AI changes. Use for broad reports of breakage, errors, failed builds or tests, unexpected behavior, or uncertainty about project health; use gitly-restore instead only when the user explicitly wants to go back.
 license: MIT
 metadata:
   collection: vibe.md

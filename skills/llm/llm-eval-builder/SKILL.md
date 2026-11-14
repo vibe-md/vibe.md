@@ -1,6 +1,6 @@
 ---
 name: llm-eval-builder
-description: Builds a small, repeatable evaluation set and runner for an LLM feature, with deterministic checks, optional rubric grading, and baseline comparison that catches regressions after a prompt or model change. Use when adding evals to an AI feature, checking whether a prompt or model change made outputs better or worse, or when the user asks how to measure LLM output quality. Not for security review, general unit tests, or one-off prompt wording.
+description: Builds a small, repeatable evaluation set and runner for an LLM feature, with deterministic checks, optional rubric grading, and baseline comparison that catches regressions after a prompt or model change. Asks before making paid model calls. Use when adding evals to an AI feature, checking whether a prompt or model change made outputs better or worse, or when the user asks how to measure LLM output quality. Not for security review, general unit tests, or one-off prompt wording.
 compatibility: Needs the project's source code and a way to run its LLM feature locally. Model calls cost money and send data to a model provider, so the skill asks before running them. No network access is needed to write the eval set itself.
 metadata:
   collection: vibe.md
