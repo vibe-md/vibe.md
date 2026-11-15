@@ -103,6 +103,18 @@ def changed_files_from_git(root, base):
     the Pull Request's merge commit and base is its first parent."""
     if base.startswith("-"):
         raise SystemExit("error: --base must be a branch or commit, such as origin/main")
+    # base cannot start with "-" (checked above), so it is never read as an option.
+    try:
+        subprocess.run(["git", "-C", str(root), "rev-parse", "--verify", "--quiet", base + "^{commit}"],
+                       check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    except OSError as exc:
+        raise SystemExit("error: could not run git: {}".format(exc))
+    except subprocess.CalledProcessError:
+        hint = "Fetch it first."
+        if base.startswith("upstream/"):
+            hint = ("Add the remote and fetch it: git remote add upstream "
+                    "https://github.com/vibe-md/vibe.md.git && git fetch upstream main")
+        raise SystemExit("error: base '{}' not found. {}".format(base, hint))
     start = _git(root, "merge-base", "--end-of-options", base, "HEAD").strip()
     parts = [part for part in _git(root, "diff", "--name-status", "--no-renames", "-z", "--end-of-options",
                                    start).split("\0") if part]

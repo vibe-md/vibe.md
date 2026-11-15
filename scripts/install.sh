@@ -73,7 +73,7 @@ agent_next_steps() {
       ;;
     copilot)
       echo "Copilot in VS Code agent mode and Copilot CLI read skills from your workspace."
-      echo "Commit and push .github/skills/$2 to make it available to Copilot cloud agent."
+      echo "Commit and push .github/skills to make the skills available to Copilot cloud agent."
       ;;
   esac
 }
@@ -748,7 +748,7 @@ EOF
 # Installations made before receipts existed: remove only copies that are still
 # byte-for-byte identical to the source, and never remove shared skills.
 uninstall_without_receipt() {
-  local skills_root="$1" label="$2" source name dest removed=0 kept=0 rel
+  local skills_root="$1" label="$2" source name dest removed=0 kept=0 rel present=0
   rel="$(agent_skills_dir "$AGENT")"
   resolve_skills_dir
   discover_skills
@@ -757,6 +757,14 @@ uninstall_without_receipt() {
   for source in "${SELECTED[@]}"; do
     name="$(basename "$source")"
     dest="$skills_root/$name"
+    # Remember whether the requested skill, or any skill of the requested group, is installed.
+    if [ -e "$dest" ] || [ -L "$dest" ]; then
+      if [ -n "$SKILL" ]; then
+        if [ "$name" = "$SKILL" ]; then present=1; fi
+      elif [ ! -d "$SKILLS_DIR/_shared/$name" ]; then
+        present=1
+      fi
+    fi
     # Removing one skill must leave the package's shared documents (and shared skills)
     # in place: the other installed skills link to them.
     if [ -n "$SKILL" ] && [ "$name" != "$SKILL" ]; then
@@ -785,6 +793,9 @@ uninstall_without_receipt() {
       fi
     fi
   done
+  if [ "$present" = "0" ]; then
+    die "'${SKILL:-$GROUP}' is not installed for $label."
+  fi
   echo "No installation record found; compared with the vibe.md source instead."
   if [ "$DRY_RUN" = "1" ]; then
     echo "Dry run: $removed director(ies) would be removed, $kept kept."
@@ -948,7 +959,14 @@ main() {
     usage_error "invalid --ref: $REF"
   fi
 
+  if [ "$FORCE" = "1" ] && [ "$UNINSTALL" = "1" ]; then
+    usage_error "--force cannot be combined with --uninstall."
+  fi
   if [ "$list" = "1" ]; then
+    if [ -n "$AGENT" ]; then
+      agent_skills_dir "$AGENT" >/dev/null ||
+        usage_error "unknown agent '$AGENT'. Choose one of: ${SUPPORTED_AGENTS// /, }."
+    fi
     resolve_skills_dir
     discover_skills
     list_skills
