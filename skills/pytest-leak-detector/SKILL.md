@@ -1,11 +1,11 @@
 ---
 name: pytest-leak-detector
-description: Audits pytest fixtures for reliable resource teardown and finds likely leftover test artifacts. Use when writing or reviewing pytest fixtures, running Python tests, or checking for temporary files after a test run.
+description: Use when reviewing pytest fixture teardown or investigating leftover files after a test run; not for routine pytest runs.
 license: MIT
 metadata:
+  collection: vibe.md
   categories: Testing
   maintainers: shir-exe
-  title: Pytest Leak Detector
 ---
 
 # Pytest Leak Detector
@@ -17,16 +17,17 @@ Help prevent pytest fixtures from leaking resources or leaving test artifacts in
 ## When to Use
 
 Use this skill when:
-- Writing or reviewing pytest fixtures, especially fixtures that open files or manage external resources.
-- Running Python tests with pytest and checking for leftover test artifacts.
+- Reviewing pytest fixture teardown.
+- Investigating files left behind after a test run.
 
-Do not use it as a general-purpose filesystem cleanup tool or as proof that a flagged file is a leak.
+Do not use it for routine pytest runs or as a general-purpose filesystem cleanup tool. A flagged file is only a candidate, not proof of a leak.
 
 ## Prerequisites
 
 - Python 3.9 or later to run the bundled artifact scanner.
+- Git CLI to exclude tracked files when the workspace is in a Git repository.
 - pytest to run the project's tests.
-- The scanner uses only the Python standard library.
+- The scanner's Python dependencies use only the standard library. Without Git, the baseline still filters pre-existing candidates.
 
 ## Instructions
 
@@ -54,16 +55,40 @@ The context manager closes the file when pytest resumes the fixture after the te
 
 ### 2. Run tests and scan for artifacts
 
-1. Run the relevant pytest command from the project root.
-2. Locate this skill's bundled `scripts/check_leaks.py` and run it with Python 3.9 or later, setting `--workspace` to the project root. For example:
+1. Locate this skill's bundled `scripts/check_leaks.py`, set `--workspace` to the project root, and choose a baseline file outside the workspace.
+2. Before running tests, save the current candidates with Python 3.9 or later:
 
    ```text
-   python3 <skill-directory>/scripts/check_leaks.py --workspace <project-root>
+   python3 <skill-directory>/scripts/check_leaks.py --workspace <project-root> --save-baseline <baseline-file>
    ```
 
-   Replace both placeholders with the actual paths. The scanner checks files outside common environment and cache directories for suspicious extensions (`.db`, `.sqlite`, `.log`, `.tmp`) and prefixes (`temp_`, `test_out_`, `dump_`).
-3. Report every candidate by its relative path. A match is only a candidate, not proof that the test run created it; it may be intentional or pre-existing. The scanner exits with status 1 when it finds candidates.
-4. If needed, separately inspect running processes using read-only process information. Verify a process belongs to this test run before discussing it; never terminate a process without the user's explicit approval.
+   Replace the placeholders with the actual paths and keep the baseline file until comparison and any cleanup are complete. In a Git repository, the scanner also excludes files tracked by Git.
+3. Run the relevant pytest command from the project root.
+4. After the tests, compare the scan with the baseline:
+
+   ```text
+   python3 <skill-directory>/scripts/check_leaks.py --workspace <project-root> --baseline <baseline-file>
+   ```
+
+   The scanner reports only new paths; it does not detect changes to files that already existed. Without Git, the baseline still filters pre-existing paths. It prunes common environment, cache, dependency, and build directories before scanning. It checks other files for suspicious extensions (`.db`, `.sqlite`, `.log`, `.tmp`) and prefixes (`temp_`, `test_out_`, `dump_`). It exits with status 1 when candidates are found and status 2 for invalid command-line usage.
+5. Report each new candidate by its relative path. A match is only a candidate, not proof that the test run created it; it may be intentional.
+6. If needed, inspect running processes with read-only commands. First list process IDs, then inspect a specific candidate:
+
+   - Windows PowerShell:
+
+     ```powershell
+     Get-CimInstance Win32_Process | Select-Object ProcessId, ParentProcessId, CreationDate, Name
+     Get-CimInstance Win32_Process -Filter "ProcessId = 1234" | Select-Object ProcessId, ParentProcessId, CreationDate, Name, CommandLine
+     ```
+
+   - macOS or Linux:
+
+     ```sh
+     ps -eo pid,ppid,lstart,comm
+     ps -p 1234 -o pid=,ppid=,lstart=,command=
+     ```
+
+   Replace `1234` with the candidate process ID. Verify it belongs to this test run using its start time, command, and parent process; a matching process name alone is not enough. These commands only display process information. Never terminate a process without the user's explicit approval.
 
 ### 3. Ask before cleanup
 
@@ -71,10 +96,10 @@ The context manager closes the file when pytest resumes the fixture after the te
 - Only after approval, pass each approved, currently detected relative path with its own `--path` option and `--clean`:
 
   ```text
-  python3 <skill-directory>/scripts/check_leaks.py --workspace <project-root> --clean --path path/to/approved.tmp
+  python3 <skill-directory>/scripts/check_leaks.py --workspace <project-root> --baseline <baseline-file> --clean --path path/to/approved.tmp
   ```
 
-- Do not add unapproved paths or broaden the cleanup. If the user approves stopping a process, stop only the specifically identified process and report the result.
+- Cleanup requires the same baseline and accepts only new candidates. Use one `--path` option for each approved file. Do not add unapproved paths or broaden the cleanup. If the user approves stopping a process, stop only the specifically identified process and report the result.
 
 ## Examples
 
@@ -84,4 +109,4 @@ The context manager closes the file when pytest resumes the fixture after the te
 
 **User:** "Run the tests and check for leftover files."
 
-**Agent:** Runs the project's pytest command, scans the project root with the bundled script, reports the exact candidate paths and any relevant processes, then asks before cleaning anything.
+**Agent:** Saves a baseline, runs the project's pytest command, compares the project root against the baseline, reports new candidate paths and any relevant processes, then asks before cleaning anything.
