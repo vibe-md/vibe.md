@@ -305,6 +305,9 @@ name: release-notes
 description: Writes release notes from merged pull requests and commit history. Use when preparing a release, drafting a changelog entry, or when the user asks what changed since the last tag.
 license: MIT
 compatibility: Requires git. Uses the GitHub CLI (gh) when available.
+metadata:
+  categories: Version Control, Documentation
+  maintainers: your-github-username
 ---
 
 # Release Notes
@@ -343,7 +346,7 @@ Do not use this skill to create tags or publish releases.
 
 ## Validating and testing
 
-Run both commands from the repository root before you open a Pull Request:
+Run these commands from the repository root before you open a Pull Request:
 
 ```bash
 python3 scripts/validate-skills.py          # validates every skill in skills/

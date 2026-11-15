@@ -366,6 +366,9 @@ skills/
 ---
 name: commit-messages
 description: Writes clear Git commit messages that follow the Conventional Commits format. Use when committing changes or when the user asks for a commit message.
+metadata:
+  categories: Version Control
+  maintainers: your-github-username
 ---
 
 # Commit Messages
@@ -398,7 +401,7 @@ Staged change: a fix for an off-by-one error in pagination.
 The essentials:
 
 - **Naming:** lowercase kebab-case, 1–64 characters, identical to the directory name, and unique in the collection.
-- **Frontmatter:** must start on the first line with `---`. `name` and `description` are required; `license`, `compatibility`, and `metadata` are optional.
+- **Frontmatter:** must start on the first line with `---`. `name` and `description` are required. A standalone skill also needs `metadata` with `categories` ([details](CONTRIBUTING.md#describing-a-standalone-skill)); `license` and `compatibility` are optional.
 - **Description:** what the skill does and when to use it, in 20 to 1024 characters. This is what agents read to decide whether to load the skill.
 - **Instructions:** concrete, numbered steps an agent can follow and a reviewer can verify.
 - **Scripts:** put helpers in `scripts/` and explain in `SKILL.md` what they do and when to run them.
