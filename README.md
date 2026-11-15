@@ -141,10 +141,13 @@ Avoid installing the same skill into several directories that one agent reads. G
 
 | Package | Skills | Install |
 | --- | --- | --- |
+| [Deploy](skills/deploy/README.md) | 8 skills that take a site from your computer to a checked public web address: choosing a host, environment variables, domains, launch, checks, updates, fixes, and rollback | `--group deploy` |
 | [Gitly](skills/gitly/README.md) | 12 Git and GitHub workflows: setup, status, checks, saving, history, comparison, recovery, branches, merging, GitHub connection, sync, and preferences | `--group gitly` |
+| [Google](skills/google/README.md) | 9 skills for adding Google services to a site: setup, sign-in, Maps, Firebase, Analytics, Search Console, Sheets, Gemini, and a key check. Unofficial, not made by Google | `--group google` |
 | [LLM](skills/llm/README.md) | 3 skills for building and checking features that use language models: evaluations, prompt review, and model migration | `--group llm` |
-| [Security](skills/security/README.md) | 2 skills for AI application security reviews and access-control regression tests | `--group security` |
-| Standalone | 11 single skills, from code hygiene and API contract checks to safe database migrations | `--skill <name>` |
+| [QA](skills/qa/README.md) | 11 testing and quality skills: test strategy, unit, integration, API, end-to-end, visual, performance, and accessibility testing, CI pipelines, bug triage, and change impact analysis | `--group qa` |
+| [Security](skills/security/README.md) | 5 skills for AI application security reviews: AI agent and LLM risks, attacks hidden in images and documents sent to vision models, image and video privacy, access-control regression tests, and one-time code tests | `--group security` |
+| Standalone | 15 single skills, from code hygiene and API contract checks to safe database migrations | `--skill <name>` |
 | Shared | `vibe`, the router for installed skills | Included automatically |
 
 The full, always-current list with every skill's description is in
