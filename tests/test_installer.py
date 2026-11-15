@@ -653,6 +653,16 @@ class GroupInstallTests(InstallerTestCase):
         self.assertEqual(result.returncode, 1, result.stderr)
         self.assertIn("group 'router' was not found.", result.stderr)
         self.assertNotIn("--skill router", result.stderr)
+        self.assertEqual(snapshot(self.project), set())
+
+    def test_uninstall_hint_does_not_suggest_installing(self):
+        (self.project / ".agents/skills").mkdir(parents=True)
+        before = snapshot(self.project)
+        result = self.install_group("save", "codex", "--uninstall")
+        self.assertEqual(result.returncode, 1, result.stderr)
+        self.assertIn("Use --skill save instead.", result.stderr)
+        self.assertNotIn("Install", result.stderr)
+        self.assertEqual(snapshot(self.project), before)
 
     def test_group_install_from_downloaded_archive(self):
         archive = self.root / "grouped.tar.gz"
