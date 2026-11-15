@@ -634,6 +634,26 @@ class GroupInstallTests(InstallerTestCase):
         self.assertIn("choose --skill or --group", result.stderr)
         self.assertEqual(snapshot(self.project), set())
 
+    def test_group_name_passed_to_skill_points_to_group_flag(self):
+        result = self.install("versions", "codex", skills_dir=self.skills)
+        self.assertEqual(result.returncode, 1, result.stderr)
+        self.assertIn("skill 'versions' was not found, but there is a group with that name", result.stderr)
+        self.assertIn("--group versions", result.stderr)
+        self.assertEqual(snapshot(self.project), set())
+
+    def test_skill_name_passed_to_group_points_to_skill_flag(self):
+        result = self.install_group("save")
+        self.assertEqual(result.returncode, 1, result.stderr)
+        self.assertIn("group 'save' was not found, but there is a skill with that name", result.stderr)
+        self.assertIn("--skill save", result.stderr)
+        self.assertEqual(snapshot(self.project), set())
+
+    def test_shared_skill_name_passed_to_group_gets_plain_message(self):
+        result = self.install_group("router")
+        self.assertEqual(result.returncode, 1, result.stderr)
+        self.assertIn("group 'router' was not found.", result.stderr)
+        self.assertNotIn("--skill router", result.stderr)
+
     def test_group_install_from_downloaded_archive(self):
         archive = self.root / "grouped.tar.gz"
         with tarfile.open(archive, "w:gz") as tar:
