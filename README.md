@@ -250,6 +250,7 @@ The installer has no other dependencies. It does not need Python, `sudo`, or net
 bash scripts/install.sh --list
 bash scripts/install.sh --skill <name> --agent <agent> [options]
 bash scripts/install.sh --group <name> --agent <agent> [options]
+bash scripts/install.sh --uninstall (--skill <name> | --group <name>) --agent <agent> [options]
 
   --skill <name>        One skill to install (see --list)
   --group <name>        All skills in a group (see --list)
@@ -257,6 +258,7 @@ bash scripts/install.sh --group <name> --agent <agent> [options]
   --project <dir>       Project to install into (default: current directory)
   --dry-run             Show what would happen without writing anything
   --force               Replace an existing, different copy of the skill
+  --uninstall           Remove an installed skill or group (see "Updating and removing skills")
   --list                List the available skills
   --skills-dir <dir>    Use a local skills collection instead of the default
   --ref <ref>           Branch or tag to download when run remotely (default: main)
