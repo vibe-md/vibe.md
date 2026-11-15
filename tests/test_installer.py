@@ -161,6 +161,29 @@ class CommandLineTests(InstallerTestCase):
         self.assertIn("project directory not found", result.stderr)
 
 
+    def test_force_with_uninstall_is_a_usage_error(self):
+        result = self.run_installer(
+            "--uninstall", "--force", "--skill", "basic-skill", "--agent", "codex", "--project", str(self.project),
+            "--skills-dir", str(VALID),
+        )
+        self.assertEqual(result.returncode, 2)
+        self.assertIn("--force cannot be combined with --uninstall", result.stderr)
+
+    def test_list_validates_the_agent(self):
+        result = self.run_installer("--list", "--agent", "notepad", "--skills-dir", str(VALID))
+        self.assertEqual(result.returncode, 2)
+        self.assertIn("unknown agent 'notepad'", result.stderr)
+        result = self.run_installer("--list", "--agent", "codex", "--skills-dir", str(VALID))
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("basic-skill", result.stdout)
+
+    def test_copilot_next_steps_name_the_skills_directory(self):
+        result = self.install("basic-skill", "copilot")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("Commit and push .github/skills to make", result.stdout)
+        self.assertNotIn(".github/skills/basic-skill to make", result.stdout)
+
+
 class ListTests(InstallerTestCase):
     def test_list_empty_collection(self):
         empty = self.root / "empty skills"

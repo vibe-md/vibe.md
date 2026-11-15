@@ -172,6 +172,31 @@ class LifecycleTests(base.InstallerTestCase):
         self.assertEqual(result.returncode, 1)
         self.assertIn("nothing is installed", result.stderr)
 
+    def test_uninstalling_a_skill_that_is_not_installed_fails_even_if_other_things_are(self):
+        self.assertEqual(self.package("beta").returncode, 0)
+        before = tree(self.project)
+        result = self.run_installer(
+            "--uninstall", "--skill", "alpha-save", "--agent", "codex", "--skills-dir", str(self.skills),
+            "--project", str(self.project),
+        )
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("error: 'alpha-save' is not installed for Codex.", result.stderr)
+        self.assertEqual(tree(self.project), before)
+
+    def test_uninstalling_a_group_with_none_of_its_skills_installed_fails(self):
+        self.assertEqual(self.package("beta").returncode, 0)
+        result = self.uninstall("alpha")
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("error: 'alpha' is not installed for Codex.", result.stderr)
+        self.assertNotIn("Removed", result.stdout)
+
+    def test_uninstalling_a_legacy_group_with_only_shared_skills_installed_fails(self):
+        shutil.copytree(str(self.skills / "_shared/router"), str(self.dest / "router"))
+        result = self.uninstall("alpha")
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("'alpha' is not installed", result.stderr)
+        self.assertTrue((self.dest / "router/SKILL.md").is_file())
+
     # --- several packages -----------------------------------------------------
 
     def test_two_packages_coexist_and_share_the_router(self):

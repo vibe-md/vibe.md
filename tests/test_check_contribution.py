@@ -385,6 +385,21 @@ class CheckContributionTests(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("must be a branch or commit", result.stderr)
 
+    def test_missing_base_ref_gets_a_helpful_message(self):
+        git = ["git", "-C", str(self.tmp)]
+        subprocess.run(git + ["init", "-q"], check=True)
+        subprocess.run(git + ["-c", "user.name=t", "-c", "user.email=t@t", "commit", "-q", "--allow-empty", "-m", "x"],
+                       check=True)
+        result = self.run_check("--base", "upstream/main")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("error: base 'upstream/main' not found. Add the remote and fetch it: git remote add upstream "
+                      "https://github.com/vibe-md/vibe.md.git && git fetch upstream main", result.stderr)
+        self.assertNotIn("merge-base", result.stderr)
+        other = self.run_check("--base", "origin/missing")
+        self.assertNotEqual(other.returncode, 0)
+        self.assertIn("error: base 'origin/missing' not found. Fetch it first.", other.stderr)
+        self.assertNotIn("git remote add upstream", other.stderr)
+
     def test_unclosed_comment_in_body_is_handled_quickly(self):
         body = self.body("## Summary\n" + "<!--" * 20000)
         result = self.run_check("--files", "skills/demo-skill/SKILL.md", "--pr-body-file", body)
