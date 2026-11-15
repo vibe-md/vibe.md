@@ -309,6 +309,17 @@ select_skills() {
     fi
   done
   if [ "${#SELECTED[@]}" -eq 0 ]; then
+    # A common mix-up is a group name passed to --skill, or the reverse. Point at the right flag.
+    for source in "${SOURCES[@]:-}"; do
+      [ -n "$source" ] || continue
+      if [ -n "$SKILL" ] && [ "$(dirname "$source")" = "$SKILLS_DIR/$SKILL" ]; then
+        die "skill '$SKILL' was not found, but there is a group with that name." "Use --group $SKILL instead, or run 'install.sh --list' to see its skills."
+      fi
+      if [ -n "$GROUP" ] && [ "$(basename "$source")" = "$GROUP" ] &&
+         [ "$(dirname "$source")" != "$SKILLS_DIR/_shared" ]; then
+        die "group '$GROUP' was not found, but there is a skill with that name." "Use --skill $GROUP instead."
+      fi
+    done
     if [ -n "$GROUP" ]; then
       die "group '$GROUP' was not found." "Run 'install.sh --list' to see the available groups."
     fi
