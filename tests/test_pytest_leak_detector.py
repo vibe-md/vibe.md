@@ -57,8 +57,9 @@ class FindLeaksTest(unittest.TestCase):
                 leaks = check_leaks.find_leaks(root)
 
             self.assertEqual([Path("visible.log")], leaks)
+            resolved_root = root.resolve()
             for visited_root in visited:
-                relative_parts = visited_root.relative_to(root).parts
+                relative_parts = visited_root.relative_to(resolved_root).parts
                 self.assertTrue(check_leaks.IGNORE_DIRS.isdisjoint(relative_parts))
 
     def test_baseline_reports_only_new_candidates(self):
