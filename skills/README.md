@@ -54,6 +54,12 @@ Take a site from "works on my computer" to a checked public web address, in plai
 - [deploy-frontend-rollback](deploy/deploy-frontend-rollback/SKILL.md) — Undoes a bad deploy of a website by switching the live site back to the last version that worked, then checks the live address. Finds the earlier working deployment on the host, explains what will change, and with the user's yes promotes or restores it using the host's own rollback (Vercel, Netlify, or Cloudflare Pages) or by re-running or reverting through Git (GitHub Pages, or any Git-connected site), and says how new pushes behave afterwards. Use when the user says "my site broke after the last update", "put the previous version of my site back online", "undo the deploy", "roll back my site", "תחזיר את האתר לגרסה הקודמת", or "האתר נשבר אחרי העדכון, תבטל". Not for finding the cause of a failure (use deploy-frontend-fix afterwards), not for restoring code files on the computer (use gitly-restore), and not for backend servers or databases.
 - [deploy-frontend-update](deploy/deploy-frontend-update/SKILL.md) — Ships changes to a website that is already online, safely. Checks the change builds, saves and pushes it (Git-connected hosts) or deploys it with the host's tool, uses a preview address to check the change first where the host offers one, asks before publishing to production, and checks the live site after every deploy. Explains preview versus production in plain words. Use when the user says "update my live site", "publish my changes", "push this to production", "I changed the homepage, put it online", "תעדכן את האתר באוויר", or "תעלה את השינויים לאתר". Not for the first deploy (use deploy-frontend-launch), not for undoing a bad deploy (use deploy-frontend-rollback), not for a failed build (use deploy-frontend-fix), and not for backend servers or databases.
 
+### [embedded](embedded/)
+
+Security, runtime reliability, memory safety, real-time determinism, and hardware protection for embedded and edge AI systems.
+
+- [embedded-ai-runtime-guard](embedded/embedded-ai-runtime-guard/SKILL.md) — Audits embedded and edge AI systems for memory, timing, watchdog, fallback, sensor, model, and actuator safety. Traces AI failure paths, identifies incomplete non-AI recovery, and proposes evidence-based fixes and tests. Use when AI inference interacts with firmware, RTOS tasks, sensors, or physical hardware.
+
 ### [gitly](gitly/)
 
 Git and GitHub workflows for people who build with AI agents: save, compare, restore, branch, merge, and back up in everyday language.
